@@ -58,10 +58,9 @@ The PowerShell based TSS TroubleShootingScript/toolset psTSS.ps1 is intended for
 Collects data on system and network configuration for diagnosing Microsoft Windows issues.
 
 If you receive the error '...is not digitally signed.' or "psTSS.ps1 cannot be loaded because running scripts is disabled on this system."
-then enable execution of scripts for the current PowerShell window with the following:
-    Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
-
-or see https://blogs.msdn.microsoft.com/pasen/2011/12/07/set-executionpolicy-windows-powershell-updated-your-execution-policy-successfully-but-the-setting-is-overridden-by-a-policy-defined-at-a-more-specific-scope/
+	then enable execution of scripts for the current PowerShell window with the following:
+      Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
+	or see https://blogs.msdn.microsoft.com/pasen/2011/12/07/set-executionpolicy-windows-powershell-updated-your-execution-policy-successfully-but-the-setting-is-overridden-by-a-policy-defined-at-a-more-specific-scope/
 	
 SYNTAX: .\psTSS.ps1 [trace options] [component options]
 Trace options:
@@ -83,6 +82,7 @@ Component options:
 	-CSVspace        # collect CSV_space ETL-log
 	-DCOM            # collect DCOM ETL-log, Reg-settings and SecurityDescriptor info
 	-BITS            # collect BITS events, logs, and data.
+	-DAsrv           # collect DirectAccess server ETL-log and Eventlog
 	-DFSsrv          # collect DFS server ETL-log and Eventlog
 	-DHCPcli         # collect DHCP client events, logs, and data.
 	-DHCPsrv         # collect DHCP server events, logs, and data.
@@ -91,6 +91,7 @@ Component options:
 	-EvtHoursBack         # number of hours back, for Eventlog
 	-GPresult        # collect GPresult
 	-HyperV          # collect Hyper-V server events, logs, and data. (includes LBFO)
+	-IPsec           # collect IPsec events
 	-LBFO            # collect LBFO teaming events
 	-mini            # collect only minimal data, no supporting information data like Sysinfo, Tasklist, Services, Registry hives
 	-MsInfo32        # collect MSinfo32
@@ -109,6 +110,7 @@ Component options:
 	-WinHTTP         # collect WinHTTP events, logs, and data.
 	-Wireless        # collect Wireless events, logs, and data. On Surface, add -Surface
 	 -Surface        # use Surface WiFi debug options
+	-WLAN            # collect WLAN/Wireless events, logs, and data. On Surface, add -Surface
 	-WPR             # option to collect WPR logging
 	-WWAN            # collect WWAN events, logs, and data.
 	-WinSock         # collect WinSock data.
@@ -157,7 +159,7 @@ waltere@microsoft.com
 #endregion ::::: psTSS intro :::::
 
 
-#region ::::: Define Script Input PARAMETERS :::::
+#region ::::: Script Input PARAMETERS :::::
 [CmdletBinding()]param(
         ## Trace scenario parameters
         [Parameter(Position=0,HelpMessage='Scenario, see HKLM:\SYSTEM\CurrentControlSet\Control\NetDiagFx\Microsoft\HostDLLs\WPPTrace\HelperClasses')]
@@ -219,11 +221,13 @@ waltere@microsoft.com
 		[switch]$GPresult 	= $false,					# collect GPresult
 		[switch]$BITS 		= $false,					# collect BITS events, logs, and data.
 		[switch]$DFSsrv		= $false,					# collect DFS server ETL-log and Eventlog
+		[switch]$DAsrv 		= $false,					# collect DirectAccess server ETL-log and Eventlog
 		[switch]$DHCPcli 	= $false,					# collect DHCP client events, logs, and data.
 		[switch]$DHCPsrv 	= $false,					# collect DHCP server events, logs, and data.
 		[switch]$DNScli 	= $false,					# collect DNS client events, logs, and data.
 		[switch]$DNSsrv 	= $false,					# collect DNS server events, logs, and data.
 		[switch]$HyperV 	= $false,					# collect Hyper-V server events, logs, and data.
+		[switch]$IPsec 		= $false,					# collect IPsec events
 		[switch]$LBFO 		= $false,					# collect LBFO teaming events
 		[switch]$NetIso 	= $false,					# collect Network Isolation events, logs, and data.
 		[switch]$NPS 		= $false,					# collect Network Policy Server NPS events, logs, and data.
@@ -234,6 +238,7 @@ waltere@microsoft.com
 		[switch]$SMBshareWatch= $false,					# collect SMB File Server Watch events, logs, and data.
 		[switch]$WinHTTP 	= $false,					# collect WinHTTP events, logs, and data.
 		[switch]$Wireless 	= $false,					# collect Wireless events, logs, and data. On Surface, add -Surface
+		[switch]$WLAN    	= $false,					# collect WLAN/Wireless events, logs, and data. On Surface, add -Surface
 		 [Switch]$Surface	= $false,					# use Surface WiFi debug options
 		[switch]$WWAN 		= $false,					# collect WWAN events, logs, and data.
 		[switch]$WinSock	= $false,					# collect WinSock data.
@@ -246,18 +251,18 @@ waltere@microsoft.com
 		[int32]$script:EvtHoursBack						# number of hours back, for Eventlog extract, script default: 0 = no limit
 )
 
-$ScriptVer = "1.05"	#Date: 2018-09-28
+$ScriptVer = "1.05"	#Date: 2018-11-19
 Write-Host "*** v$ScriptVer - Don't click inside the script window while processing as it will cause the script to pause. ***"  -ForegroundColor Yellow
-#endregion ::::: Define Script Input PARAMETERS :::::
+#endregion ::::: Script Input PARAMETERS :::::
 
 
-#region ::::: Define Global Variables ::::: 
+#region ::::: Global Variables ::::: 
     # Section for global variables, which you don´t want to show up in the parameter region        
     [bool]$IsCluster = $False						# define script scope variable, whether we are running the script on a cluster or not
     $TimeStampScriptStart = Get-Date				# get the timestamp, when this script starts
     $TimeStampStartSaved = $TimeStampScriptStart	# only first time save the script start timestamp
     
-#endregion ::::: Define Global Variables ::::: 
+#endregion ::::: Global Variables ::::: 
 
 
 #region ::::: FUNCTIONS :::::
@@ -304,6 +309,7 @@ Component options:
 	-SysFileVer      # collect System File Versions
 	-WinHTTP         # collect WinHTTP events, logs, and data.
 	-Wireless        # collect Wireless events, logs, and data. On Surface, add -Surface
+	-WLAN            # collect WLAN/Wireless events, logs, and data. On Surface, add -Surface
 	 -Surface        # use Surface WiFi debug options
 	-WPR             # option to collect WPR logs
 	-WWAN            # collect WWAN events, logs, and data.
@@ -1647,7 +1653,7 @@ function Start-PerfmonLogs {
     [CmdletBinding()]param(
 		$tracePath = "$tracePath\$Date_time\"
 		)
-	Write-Log "Starting PerfmonLog."
+	Write-Log "Starting PerfmonLog, Interval=1sec."
     Invoke-Expression "logman create counter `"$env:COMPUTERNAME`_Perfmon_base`" -o `"$tracePath\$env:COMPUTERNAME`_Perfmon_base`" -f bincirc -v mmddhhmm -max 500 -c `"\LogicalDisk(*)\*`" `"\Memory\*`" `"\.NET CLR Memory(*)\*`" `"\Cache\*`" `"\Network Interface(*)\*`" `"\Netlogon(*)\*`" `"\Paging File(*)\*`" `"\PhysicalDisk(*)\*`" `"\Processor(*)\*`" `"\Processor Information(*)\*`" `"\Process(*)\*`" `"\Thread(*)\*`" `"\Redirector\*`" `"\Server\*`" `"\System\*`" `"\Server Work Queues(*)\*`" `"\Terminal Services\*`" -si 00:00:01"
     Invoke-Expression "logman start `"$env:COMPUTERNAME`_Perfmon_base`""
 } # end Start-PerfmonLogs
@@ -1665,13 +1671,13 @@ function StartPerfLogs {
 	[CmdletBinding()]param([bool]$Long = $false)
     if ($Long)
     {
-        [string]$StartArg = ' create counter PerfLogLong  -o ' + "$dataPath\$env:COMPUTERNAME`PerfLogLong.blg"  + " -f bincirc -v mmddhhmm -max 300 -c " + "\LogicalDisk(*)\* " + "\Memory\* \Cache\* " + "\Network Interface(*)\* " + "\NTDS(*)\* " + "\Netlogon(*)\* " + "\Database(lsass)\* " + "\Paging File(*)\* " + "\PhysicalDisk(*)\* " + "\Processor(*)\* " + "\Processor Information(*)\* " + "\Process(*)\* "+ "\Redirector\* "+ "\Server\* " + "\System\* " + "\Server Work Queues(*)\* " + "-si 00:05:00"
-        $StartArg1 = 'start "PerfLogLong"'
+        [string]$StartArg = ' create counter PerfLog5min  -o ' + "$dataPath\$env:COMPUTERNAME`PerfLog5min.blg"  + " -f bincirc -v mmddhhmm -max 300 -c " + "\LogicalDisk(*)\* " + "\Memory\* \Cache\* " + "\Network Interface(*)\* " + "\NTDS(*)\* " + "\Netlogon(*)\* " + "\Database(lsass)\* " + "\Paging File(*)\* " + "\PhysicalDisk(*)\* " + "\Processor(*)\* " + "\Processor Information(*)\* " + "\Process(*)\* "+ "\Redirector\* "+ "\Server\* " + "\System\* " + "\Server Work Queues(*)\* " + "-si 00:05:00"
+        $StartArg1 = 'start "PerfLog5min"'
     }
     else
     {
-        [string]$StartArg = ' create counter PerfLogShort -o ' + "$dataPath\$env:COMPUTERNAME`PerfLogShort.blg" + " -f bincirc -v mmddhhmm -max 300 -c " + "\LogicalDisk(*)\* " + "\Memory\* \Cache\* " + "\Network Interface(*)\* " + "\NTDS(*)\* " + "\Netlogon(*)\* " + "\Database(lsass)\* " + "\Paging File(*)\* " + "\PhysicalDisk(*)\* " + "\Processor(*)\* " + "\Processor Information(*)\* " + "\Process(*)\* "+ "\Redirector\* "+ "\Server\* " + "\System\* " + "\Server Work Queues(*)\* " + "-si 00:05:00"
-        $StartArg1 = ' start "PerfLogShort"'
+        [string]$StartArg = ' create counter PerfLog5Sec -o ' + "$dataPath\$env:COMPUTERNAME`PerfLog5sec.blg" + " -f bincirc -v mmddhhmm -max 300 -c " + "\LogicalDisk(*)\* " + "\Memory\* \Cache\* " + "\Network Interface(*)\* " + "\NTDS(*)\* " + "\Netlogon(*)\* " + "\Database(lsass)\* " + "\Paging File(*)\* " + "\PhysicalDisk(*)\* " + "\Processor(*)\* " + "\Processor Information(*)\* " + "\Process(*)\* "+ "\Redirector\* "+ "\Server\* " + "\System\* " + "\Server Work Queues(*)\* " + "-si 00:00:05"
+        $StartArg1 = ' start "PerfLog5sec"'
     }
     $ps = new-object System.Diagnostics.Process
     $ps.StartInfo.Filename = "logman.exe"
@@ -1694,13 +1700,13 @@ function StopPerfLogs {
 	[CmdletBinding()]param([bool]$Long = $false)
     if ($Long)
     {
-        $StartArgs = ' stop "PerfLogLong"'
-        $StartArgs1 = ' delete "PerfLogLong"'
+        $StartArgs = ' stop "PerfLog5min"'
+        $StartArgs1 = ' delete "PerfLog5min"'
     }
     else
     {
-        $StartArgs = ' stop "PerfLogShort"'
-        $StartArgs1 = ' delete "PerfLogShort"'
+        $StartArgs = ' stop "PerfLog5sec"'
+        $StartArgs1 = ' delete "PerfLog5sec"'
     }
     $ps = new-object System.Diagnostics.Process
     $ps.StartInfo.Filename = "logman.exe"
@@ -1932,13 +1938,16 @@ Start-Transcript -Path "$script:dataPath\_tss_$Date_time`_Transcript.Log"
 [array]$PROVIDER_LIST =  @()
 
 # list of Default Network stack providers to collect from... do not remove or change these!
-if ($NetBase) { Write-Log " ...Enabling Network Stack Base Provider: Winsock-AFD WFP TCPIP NetIO NDIS" -tee 
+
+
+if ($NetBase) { Write-Log " ...Enabling Network Stack Base Provider: Winsock-AFD WFP TCPIP NetIO NDIS" -tee
 	$ProviderName = "Net_Base"
 	[array]$PROVIDERS_NET_STACK =	'{E53C6823-7BB8-44BB-90DC-3F86090D48A6}', # Microsoft-Windows-Winsock-AFD
                                     '{0C478C5B-0351-41B1-8C58-4A6737DA32E3}', # Microsoft-Windows-WFP
                                     '{2F07E2EE-15DB-40F1-90EF-9D7BA282188A}', # Microsoft-Windows-TCPIP
                                     '{EB004A05-9B1A-11D4-9123-0050047759BC}', # NetIO
 							   @{provider='{CDEAD503-17F5-4A3E-B7AE-DF8CC2902EB9}'; level="0x5"; keywords="0xFFFFFFFFFFFFFFFF"} # Microsoft-Windows-NDIS ... never use level=0xFF, it may spam the log file
+	
 		$PROVIDER_LIST += $PROVIDERS_NET_STACK}
 
 # list of scenario based providers to collect from
@@ -2116,6 +2125,40 @@ if ($CSVspace) { $ProviderName = "CSVspace"
 				$PROVIDER_LIST += $PROVIDERS_CSVspace
 }
 
+if ($DAsrv) { $ProviderName = "DAsrv"
+			#	$PROVIDER_LIST += $PROVIDERS_NET_STACK
+	[string[]]$EVENT_LOG_LIST_DAsrv = 'Microsoft-Windows-RemoteAccess-RemoteAccessServer/Admin', 'Microsoft-Windows-RemoteAccess-MgmtClient/Operational', 'Microsoft-Windows-RemoteAccess-MgmtClientPerf/Operational', 'Windows Networking Vpn Plugin Platform/Operational',
+ 'Windows Networking Vpn Plugin Platform/OperationalVerbose', 'Microsoft-Windows-VPN-Client/Operational', 'Microsoft-Windows-CAPI2/Operational', 'Security'
+				$EVENT_LOG_LIST +=  $EVENT_LOG_LIST_DAsrv
+	[array]$PROVIDERS_DAsrv =  		'{214609E4-72CC-4E0E-95F8-1D503FC4AD7F}', # Microsoft-Windows-RemoteAccess-RemoteAccessServer
+                                    '{C22D1B14-C242-49DE-9F17-1D76B8B9C458}', # Microsoft-Pef-WFP-MessageProvider
+                                    '{66C07ECD-6667-43FC-93F8-05CF07F446EC}', # Microsoft-Windows-WinNat
+									'{66A5C15C-4F8E-4044-BF6E-71D896038977}', # Microsoft-Windows-Iphlpsvc
+									'{6600E712-C3B6-44A2-8A48-935C511F28C8}', # Microsoft-Windows-Iphlpsvc-Trace
+									'{4EDBE902-9ED3-4CF0-93E8-B8B5FA920299}', # Microsoft-Windows-TunnelDriver
+									'{A67075C2-3E39-4109-B6CD-6D750058A732}', # Microsoft-Windows-IPNAT
+									'{A6F32731-9A38-4159-A220-3D9B7FC5FE5D}'  # Microsoft-Windows-SharedAccess_NAT
+				$PROVIDER_LIST += $PROVIDERS_DAsrv
+	[string[]]$FILE_LIST_DAsrv = "$env:windir\tracing\*"
+				$FILE_LIST += $FILE_LIST_DAsrv
+	[array]$PRE_COMMANDS_DAsrv = 	[array]("netsh ras diag set trace enable", ''),
+									[array]("netsh ras diag set trace clear", ''),
+									[array]("netsh wfp capture start file=`"$datapath\$env:COMPUTERNAME`_wfpdiag.cab`"", '')	#Note: as we cannot set 'wfp capture' circular as - it may be too huge if running for long time
+				$PRE_COMMANDS += $PRE_COMMANDS_DAsrv
+	[array]$POST_COMMANDS_DAsrv = 	[array]("netsh ras diag set trace disable", ''),
+									[array]("netsh wfp capture stop", ''),
+									[array]("netsh ras dump ","$env:COMPUTERNAME`_RAS-dump"),
+									[array]("netsh int iphttps show state","$env:COMPUTERNAME`_DA_iphttps-state"),
+									[array]("netsh int ipv4 show dynamicportrange tcp","$env:COMPUTERNAME`_DA_dynamicportrange"),
+									[array]('Get-DAEntryPointDC', '$env:COMPUTERNAME`_Get-DAEntryPointDC')
+				$POST_COMMANDS += $POST_COMMANDS_DAsrv
+	[string[]]$scenarios = 'DirectAccess','WFP-IPsec'
+	[array]$REGISTRY_LIST_DAsrv = 	[array]("HKLM:\SYSTEM\CurrentControlSet\", "Control\SecurityProviders\Schannel"),
+									#[array]("HKU:\S-1-5-18\Software\", "Microsoft\Windows\CurrentVersion\Internet Settings")
+									[array]("HKCU:\Software\", "Microsoft\Windows\CurrentVersion\Internet Settings")
+						$REGISTRY_LIST += $REGISTRY_LIST_DAsrv
+}
+
 if ($DCOM) { $ProviderName = "DCOM"
 	[array]$PROVIDERS_DCOM = 		'{9474A749-A98D-4F52-9F45-5B20247E4F01}', # DCOMSCM
                                     '{C44219D0-F344-11DF-A5E2-B307DFD72085}'  # Microsoft-Windows-DirectComposition
@@ -2188,9 +2231,9 @@ if ($DHCPsrv) { $ProviderName = "DHCPsrv"
 	[string[]]$FILE_LIST_DHCPsrv = "$env:windir\System32\dhcp\Dhcp*.log"
 				$FILE_LIST += $FILE_LIST_DHCPsrv
 	[array]$POST_COMMANDS_DHCPsrv = [array]('Get-DhcpServerSetting', '$env:COMPUTERNAME`_Get-DhcpServerSetting'),
-                        [array]('Get-DhcpServerDatabase', '$env:COMPUTERNAME`_Get-DhcpServerDatabase'),
-                        [array]('Get-DhcpServerDnsCredential', '$env:COMPUTERNAME`_Get-DhcpServerDnsCredential'),
-                        [array]('Get-DhcpServerv4DnsSetting', '$env:COMPUTERNAME`_Get-DhcpServerv4DnsSetting')
+									[array]('Get-DhcpServerDatabase', '$env:COMPUTERNAME`_Get-DhcpServerDatabase'),
+									[array]('Get-DhcpServerDnsCredential', '$env:COMPUTERNAME`_Get-DhcpServerDnsCredential'),
+									[array]('Get-DhcpServerv4DnsSetting', '$env:COMPUTERNAME`_Get-DhcpServerv4DnsSetting')
 				$POST_COMMANDS += $POST_COMMANDS_DHCPsrv
 }
 
@@ -2272,6 +2315,29 @@ if ($HyperV -or $RDMA) { $ProviderName = "HyperV"
 				$POST_COMMANDS += $POST_COMMANDS_HyperV
 }
 
+if ($IPsec) { $ProviderName = "IPsec"
+	[array]$PROVIDERS_IPsec = 		'{C91EF675-842F-4FCF-A5C9-6EA93F2E4F8B}', # Microsoft-Windows-IPSEC-SRV
+                                    '{94335EB3-79EA-44D5-8EA9-306F49B3A040}', # IpsecPolicyAgent
+                                    '{94335EB3-79EA-44D5-8EA9-306F4FFFA070}'  # IpsecPAStore
+                                    '{94335EB3-79EA-44D5-8EA9-306F49B3A070}'  # IpsecPolStore
+                                    '{AEA1B4FA-97D1-45F2-A64C-4D69FFFD92C9}'  # Microsoft-Windows-GroupPolicy
+                                    '{BD2F4252-5E1E-49FC-9A30-F3978AD89EE2}'  # Microsoft-Windows-GroupPolicyTriggerProvider
+                                    '{2588030D-920F-4AD6-ACC0-8AA2CD761DDC}'  # IPsecGWWPPGuid
+                                    '{12D06DF7-58EB-4642-9FB2-6D50D008900C}'  # RRAS IpSecFirewall
+                                    '{E4FF10D8-8A88-4FC6-82C8-8C23E9462FE5}'  # NSHIPSEC
+                                    '{5EEFEBDB-E90C-423A-8ABF-0241E7C5B87D}'  # Mpssvc
+                                    '{94335EB3-79EA-44D5-8EA9-306F49B3A041}'  # MpsIpsecClient
+                                    '{3BEEDE59-FC7D-5057-CE28-BABAD0B27181}'  # IPsec hcs
+                                    '{2BEEDE59-EC7D-4057-BE28-C9EAD0B27180}'  # NAP IPsec
+                                    '{8115579E-2BEA-4C9E-9AB1-821CC2C98AB0}'  #	Microsoft-Windows-NAPIPSecEnf								
+                                    '{3AD15A04-74F1-4DCA-B226-AFF89085A05A}'  #	Microsoft-Windows-Wnv
+									'{D8FA2E77-A77C-4494-9297-ACE3C12907F6}'  #	FwPolicyIoMgr
+									'{49D6AD7B-52C4-4F79-A164-4DCD908391E4}'  #	NisDrvWFP Provider
+									'{5AD8DAF3-405C-4FD8-BCC5-5ABE20B3EDD6}'  #	FW
+									'{B40AEF77-892A-46F9-9109-438E399BB894}'  #	AFD Trace									
+									$PROVIDER_LIST += $PROVIDERS_IPsec
+}
+
 if ($LBFO) { $ProviderName = "LBFO"	# included in HyperV and RDMA
 	[string[]]$EVENT_LOG_LIST_LBFO = 'Microsoft-Windows-MsLbfoProvider/Operational'
 				$EVENT_LOG_LIST +=  $EVENT_LOG_LIST_LBFO
@@ -2349,6 +2415,7 @@ if ($Ras) { $ProviderName = "Ras"
                                     '{106B464D-8043-46B1-8CB8-E92A0CD7A560}', # KernelFilterDriver
                                     '{D710D46C-235D-4798-AC20-9F83E1DCD557}', # Microsoft-Windows-EapMethods-Ttls
                                     '{9CC0413E-5717-4AF5-82EB-6103D8707B45}', # Microsoft-Windows-EapMethods-RasTls
+									'{4EDBE902-9ED3-4CF0-93E8-B8B5FA920299}', # Microsoft-Windows-TunnelDriver
 									'{D84521F7-2235-4237-A7C0-14E3A9676286}'  # Microsoft-Windows-Ras-NdisWanPacketCapture
 				$PROVIDER_LIST += $PROVIDERS_Ras
 	#[string[]]$FILE_LIST_Ras = "$env:windir\tracing\*"
@@ -2416,7 +2483,7 @@ if ($WinSock) { $ProviderName = "WinSock"
 				$PROVIDER_LIST += $PROVIDERS_WinSock
 }
 
-if ($Wireless -or $WWAN) { $ProviderName = "Wireless"
+if ($Wireless -or $WLAN-or $WWAN) { $ProviderName = "Wireless"
 	[string[]]$EVENT_LOG_LIST_Wireless = 'Microsoft-Windows-CAPI2/Operational', 'Microsoft-Windows-EapHost/Operational', 'Microsoft-Windows-EapMethods-RasTls/Operational', 'Microsoft-Windows-OneX/Operational', 'Microsoft-Windows-WLAN-AutoConfig/Operational'
 				$EVENT_LOG_LIST +=  $EVENT_LOG_LIST_Wireless
 	[array]$PROVIDERS_Wireless = 	'{0BD3506A-9030-4F76-9B88-3E8FE1F7CFB6}', # Microsoft-Windows-NWiFi
@@ -2426,7 +2493,6 @@ if ($Wireless -or $WWAN) { $ProviderName = "Wireless"
                                     '{239CFB83-CBB7-4BBC-A02E-9BDB496AA7C2}', # Microsoft-Windows-WlanConn
                                     '{6EB8DB94-FE96-443F-A366-5FE0CEE7FB1C}', # Microsoft-Windows-EapHost
                                     '{AB0D8EF9-866D-4D39-B83F-453F3B8F6325}', # Microsoft-Windows-OneX
-                                    #'{CDEAD503-17F5-4A3E-B7AE-DF8CC2902EB9}', # Microsoft-Windows-NDIS
                                     '{DAA6A96B-F3E7-4D4D-A0D6-31A350E6A445}', # Microsoft-Windows-WLAN-Driver
                                     '{999AC137-42DC-41D3-BA9D-A325A9E1A986}', # Microsoft-Windows-WLAN-BMRHandler
                                     '{B8794785-F7E3-4C2D-A33D-7B0BA0D30E18}', # Microsoft-Windows-WiFiConnApi
@@ -2444,13 +2510,37 @@ if ($Wireless -or $WWAN) { $ProviderName = "Wireless"
                                     '{21ba7b61-05f8-41f1-9048-c09493dcfe38}', # WDI WPP
                                     '{f3486b27-31d7-4465-b333-f851e60f6d4b}', # WDI TLV
                                     '{9CC0413E-5717-4AF5-82EB-6103D8707B45}', # EAP RAS/TLS
-                                    '{58980F4B-BD39-4A3E-B344-492ED2254A4E}'  # EAP RAS/MS-CHAPV2
+                                    '{58980F4B-BD39-4A3E-B344-492ED2254A4E}', # EAP RAS/MS-CHAPV2
+									'{67D07935-283A-4791-8F8D-FA9117F3E6F2}', # Microsoft-Windows-Wcmsvc
+									'{988CE33B-DDE5-44EB-9816-EE156B443FF1}', # WcmsvcCtlGuid
+									'{50B3E73C-9370-461D-BB9F-26F32D68887D}', # Microsoft-Windows-WebIO
+									'{4E749B6A-667D-4C72-80EF-373EE3246B08}', # WinInet
+									'{43D1A55C-76D6-4F7E-995C-64C711E5CAFE}', # Microsoft-Windows-WinINet
+									'{A70FF94F-570B-4979-BA5C-E59C9FEAB61B}', # Microsoft-Windows-WinINet-Capture
+									'{5402E5EA-1BDD-4390-82BE-E108F1E634F5}', # Microsoft-Windows-WinINet-Config
+									'{609151DD-04F5-4DA7-974C-FC6947EAA323}', # DNS API/DNS lib
+									'{B3A7698A-0C45-44DA-B73D-E181C9B5C8E6}', # WinHTTP
+									'{7D44233D-3055-4B9C-BA64-0D47CA40A232}', # Microsoft-Windows-WinHttp
+									'{2F07E2EE-15DB-40F1-90EF-9D7BA282188A}', # Microsoft-Windows-TCPIP
+									'{CDEAD503-17F5-4A3E-B7AE-DF8CC2902EB9}', # Microsoft-Windows-NDIS
+									'{7DD42A49-5329-4832-8DFD-43D979153A88}'  # Microsoft-Windows-Kernel-Network
 				$PROVIDER_LIST += $PROVIDERS_Wireless
 	[array]$POST_COMMANDS_Wireless = [array]("pushd $dataPath; netsh wlan show all | Out-File '$dataPath\$env:COMPUTERNAME`_Wireless-netenv.txt' -Force; popd", ''),
                         [array]("pushd $dataPath; ipconfig /all | Out-File '$dataPath\$env:COMPUTERNAME`_Wireless-ipconfig.txt' -Force; popd", '')
 				$POST_COMMANDS += $POST_COMMANDS_Wireless
 	if ($dbg) { $ProviderName = "Wireless_dbg"
-		[array]$PROVIDERS_dbg = 	'{2C929297-CD5C-4187-B508-51A2754A95A3}', # VAN WPP
+		[array]$PROVIDERS_Wl_dbg = 	'{D905AC1D-65E7-4242-99EA-FE66A8355DF8}', # Native WIFI MSM Trace
+                                    '{D905AC1C-65E7-4242-99EA-FE66A8355DF8}', # NwfDrvCtlGuid
+									'{6DA4DDCA-0901-4BAE-9AD4-7E6030BAB531}', # WLanDiagCtlGuid
+									'{2E8D9EC5-A712-48C4-8CE0-631EB0C1CD65}', # DiagL2SecCtlGuid
+									'{1AC55562-D4FF-4BC5-8EF3-A18E07C4668E}', # Wlan AutoConfig
+									'{3496B396-5C43-45E7-B38E-D509B79AE721}', # WFDPAL
+									'{9CC9BEB7-9D24-47C7-8F9D-CCC9DCAC29EB}', # WFDProvCtlGuid
+									'{4EF79621-73BA-4BC1-8AD9-222F6FACDB65}', # CTRLWLANSVCPAL
+									'{F4190F32-F96E-479C-A45D-D485CFFE42E6}', # Microsoft.Windows.Networking.Wlan.Msmsec
+									'{72B18662-744E-4A68-B816-8D562289A850}', # Microsoft.Windows.Networking.Wlan.Msmsec
+									'{F860141E-94E0-418E-A8A6-2321623C3018}', # VlibGuid
+									'{2C929297-CD5C-4187-B508-51A2754A95A3}', # VAN WPP
                                     '{36DFF693-C097-438B-B3CA-62E80D15D227}', # WlanGPUI WPP
                                     '{520319A9-B932-4EC7-943C-61E560939101}', # WlanDlg WPP
                                     '{5F31090B-D990-4E91-B16D-46121D0255AA}', # EAPHost WPP
@@ -2460,9 +2550,8 @@ if ($Wireless -or $WWAN) { $ProviderName = "Wireless"
                                     '{ED092A80-0125-4403-92AC-4C06632420F8}', # WlanUtil WPP
                                     '{C100BECE-D33A-4A4B-BF23-BBEF4663D017}', # Wcn WPP
                                     '{24B4F621-1022-48ED-8B93-23FA02191D83}', # Microsoft.Windows.Networking.Wlan.Nwifi
-                                    '{D905AC1C-65E7-4242-99EA-FE66A8355DF8}', # NwfDrvCtlGuid
                                     '{DD7A21E6-A651-46D4-B7C2-66543067B869}'  # NDISTraceGuid
-					$PROVIDER_LIST += $PROVIDERS_dbg}
+					$PROVIDER_LIST += $PROVIDERS_Wl_dbg}
 			
 	if ($Surface) { $ProviderName = "Wireless_Surface"
 		[array]$Surface_PROVIDERS = '{0160d072-248f-11e2-be71-082e5f28d97c}', # IHV WPP
@@ -2487,8 +2576,6 @@ if ($WWAN) { $ProviderName = "WWAN"
                                     '{0255BB48-E574-488A-8348-AE2C7652AFC5}', # microsoft-windows-wwan-hlk
                                     '{B3EEE223-D0A9-40CD-ADFC-50F1888138AB}', # Microsoft-Windows-WWAN-NDISUIO-EVENTS
                                     '{D58C1268-B309-11D1-969E-0000F875A532}', # CommonWppTrace
-                                    '{988CE33B-DDE5-44EB-9816-EE156B443FF1}', # WcmsvcCtlGuid
-                                    '{67D07935-283A-4791-8F8D-FA9117F3E6F2}', # Microsoft-Windows-Wcmsvc
                                     '{499F891B-A7CE-48AD-A593-38BD85A73F41}', # WcmConfigSPControlGuid
                                     '{E0D3CE46-1E48-42AA-A5E3-D0F18EC9A48B}', # Microsoft.Windows.CellCore.Provisioning
                                     '{B6A9C8BA-70DE-42E4-88DE-001A041B0768}', # Microsoft.Windows.ConnectionManager.WcmApi
