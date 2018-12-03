@@ -3,7 +3,7 @@
 #requires -RunAsAdministrator
 #requires -Modules NetEventPacketCapture
 
-#region ::::: psTSS intro :::::
+#region ::::: psTSS Help :::::
 <#
 	Best Practice Reference: https://github.com/PoshCode/PowerShellPracticeAndStyle
 
@@ -88,7 +88,7 @@ Component options:
 	-DHCPsrv         # collect DHCP server events, logs, and data.
 	-DNScli          # collect DNS client events, logs, and data.
 	-DNSsrv          # collect DNS server events, logs, and data.
-	-EvtHoursBack         # number of hours back, for Eventlog
+	-EvtHoursBack    # number of hours back, for Eventlog
 	-GPresult        # collect GPresult
 	-HyperV          # collect Hyper-V server events, logs, and data. (includes LBFO)
 	-IPsec           # collect IPsec events
@@ -99,7 +99,7 @@ Component options:
 	-NetIso          # collect Network Isolation events, logs, and data.
 	-NPS             # collect Network Policy Server NPS events, logs, and data.
 	-Perfmon         # option to collect Perfmon logging
-	-ProcDump Pname.exe # option to collect ProcDumps of process
+	-ProcDump Pname.exe # option to collect ProcDumps of process at stop
 	-ProcMon         # option to collect ProcMon logging
 	-PSR             # enable Problem Steps Recooder (PSR)
 	-SMBcli          # collect SMB client events, logs, and data.
@@ -111,6 +111,7 @@ Component options:
 	-Wireless        # collect Wireless events, logs, and data. On Surface, add -Surface
 	 -Surface        # use Surface WiFi debug options
 	-WLAN            # collect WLAN/Wireless events, logs, and data. On Surface, add -Surface
+	-WorkFolders     # option to collect WorkFolders client and server logging	
 	-WPR             # option to collect WPR logging
 	-WWAN            # collect WWAN events, logs, and data.
 	-WinSock         # collect WinSock data.
@@ -131,17 +132,23 @@ After initialization, the script will wait at stage:
 and finish data collection after you hit 's'.
 
 .PARAMETER ComputerNames
-	Defines on which Computers you want to run the script (Default is local Host)
+	Define on which computers you want to run the script. Default is local host
 
 .PARAMETER LogPathLocal
-	Path where we store the data (default is SystemDrive\MS_DATA\DataTime; e.g. C:\MS_DATA\180925-101214)
+	Path where we store the data. Default is SystemDrive\MS_DATA\DataTime; e.g. C:\MS_DATA\180925-101214
 
 .PARAMETER HoursBack
-	How much Hours should we look back in the data and collect them
+	How much hours should we look back in the event data and collect them. Default =1
 	
 .PARAMETER EventLogNames
 	Define the Eventlogs you want to gather; Wildcard * is allowed
-	Sample: -EventLogNames "System", "Application", "*CSVFS*", "*Smb*", "*winrm*", "*wmi*", "*spaces*" 
+	Sample: -EventLogNames "System", "Application", "*CSVFS*", "*Smb*", "*winrm*", "*wmi*", "*spaces*"
+	
+.EXAMPLE
+	psTSS.ps1  # simply run it without any parameter to collect all data with defaults
+
+.EXAMPLE 
+	psTSS.ps1 -ComputerName # run the script data collection on specific computer
 	
 .EXAMPLE
  .\psTSS.ps1 -DNSsrv -udpOnly -verbose
@@ -161,108 +168,127 @@ waltere@microsoft.com
 
 #region ::::: Script Input PARAMETERS :::::
 [CmdletBinding()]param(
-        ## Trace scenario parameters
-        [Parameter(Position=0,HelpMessage='Scenario, see HKLM:\SYSTEM\CurrentControlSet\Control\NetDiagFx\Microsoft\HostDLLs\WPPTrace\HelperClasses')]
-         [string[]]$Scenario = '',									# comma separated scenario names of netsh trace scenarios to collect from, example: 'wlan_dbg','wwan_dbg'
-        [Parameter(Position=1)]
-         [AllowNull()]
-         [byte]$Level = '',											# level at which to capture ETL
-        [Parameter(Position=2)]
-        [int]$maxSize = 1024,										# maximum size in MB of the circular ETL file
-        [int]$TraceBufferSize = 1024,								# Specifies the amount of memory, in kilobytes, for a buffer for event tracing. The maximum value is 1024.
-        [byte]$MaxNumberOfBuffers = [Byte]::MaxValue,				# Specifies the maximum number of buffers used in a session.
-        ### packet capture parameters ###
-        [ValidateSet("SaveToFile", "RealtimeRPC", "RealtimeLocal")]	## New-NetEventSession options ##
-		[Parameter(Position=3,HelpMessage='Choose SaveToFile|RealtimeRPC|RealtimeLocal')]
-         [string]$CaptureMode = "SaveToFile",
-		 <# save modes:         -- SaveToFile. Saves the capture to an .etl file.
-								-- RealtimeRPC. Connects remotely for a live event and packet capture.
-								-- RealtimeLocal. Connects locally for a live event and packet capture.
-         #>
+	$ComputerNames = $env:COMPUTERNAME,	# Pass ComputerNames e.g. H16N1, default is local host name
+	[string]$LogPath = "$env:SystemDrive\MS_DATA\" + (Get-Date -Format 'yyyyMMdd_HHmmss'), # Path where the data on the local computer will be stored
+	[Int]$HoursBack = 1,					# Define how much hours we should look back in the eventlogs
+    ## Trace scenario parameters
+	[Parameter(Position=0,HelpMessage='Scenario, see HKLM:\SYSTEM\CurrentControlSet\Control\NetDiagFx\Microsoft\HostDLLs\WPPTrace\HelperClasses')]
+	 [string[]]$Scenario = '',									# comma separated scenario names of netsh trace scenarios to collect from, example: 'wlan_dbg','wwan_dbg'
+	[Parameter(Position=1)]
+	 [AllowNull()]
+	 [byte]$Level = '',											# level at which to capture ETL
+	[Parameter(Position=2)]
+	 [int]$maxSize = 1024,										# maximum size in MB of the circular ETL file
+	 [int]$TraceBufferSize = 1024,								# Specifies the amount of memory, in kilobytes, for a buffer for event tracing. The maximum value is 1024.
+	 [byte]$MaxNumberOfBuffers = [Byte]::MaxValue,				# Specifies the maximum number of buffers used in a session.
+	 ### packet capture parameters ###
+	 [ValidateSet("SaveToFile", "RealtimeRPC", "RealtimeLocal")]	## New-NetEventSession options ##
+	[Parameter(Position=3,HelpMessage='Choose SaveToFile|RealtimeRPC|RealtimeLocal')]
+	 [string]$CaptureMode = "SaveToFile",
+	  <# save modes:	-- SaveToFile. Saves the capture to an .etl file.
+						-- RealtimeRPC. Connects remotely for a live event and packet capture.
+						-- RealtimeLocal. Connects locally for a live event and packet capture.
+	  #>
 
-        ## Add-NetEventPacketCaptureProvider options ##
-        [ValidateSet("Physical", "Switch", "BothPhysicalAndSwitch")]
-		[Parameter(Position=4,HelpMessage='Choose Physical|Switch|BothPhysicalAndSwitch')]
-        <# Specifies whether the packet capture is enabled for physical network adapters, virtual switches, or both. The acceptable values for this parameter are:
-            -	Physical. Captures packets from physical network adapters.
-            -	Switch. Captures packets from the virtual machine switch(es) on Hyper-V hosts.
-            -	BothPhysicalAndSwitch. Captures packets from both the physical network adapters and the virtual machine switch(es).
+	## Add-NetEventPacketCaptureProvider options ##
+	[ValidateSet("Physical", "Switch", "BothPhysicalAndSwitch")]
+	 [Parameter(Position=4,HelpMessage='Choose Physical|Switch|BothPhysicalAndSwitch')]
+	<# Specifies whether the packet capture is enabled for physical network adapters, virtual switches, or both. The acceptable values for this parameter are:
+	    -	Physical. Captures packets from physical network adapters.
+	    -	Switch. Captures packets from the virtual machine switch(es) on Hyper-V hosts.
+	    -	BothPhysicalAndSwitch. Captures packets from both the physical network adapters and the virtual machine switch(es).
 		#>
-        [string]$captureType = "Physical",
-        [byte]$capLevel = 0x4,							# packet capture level. Should remain 0x4 unless you know what you're doing. No packets are captured below 0x4.
-        [ValidateRange(64,65535)]
-         [int]$truncBytes = 1500,						# sets the number of bytes to collect of each captured packet
-        [Switch]$udpOnly = $false,						# capture only UDP packets
+	[string]$captureType = "Physical",
+	[byte]$capLevel = 0x4,							# packet capture level. Should remain 0x4 unless you know what you're doing. No packets are captured below 0x4.
+	[ValidateRange(64,65535)]
+	 [int]$truncBytes = 1500,						# sets the number of bytes to collect of each captured packet
+	[Switch]$udpOnly = $false,						# capture only UDP packets
 
-		## session parameters ##
-        [string]$tracePath = "$ENV:SYSTEMDRIVE\MS_DATA",# base file path for the data collection
-        [string]$Date_time = "$(get-date -format "yyyyMMdd_HHmmss")",	# base name used for NetEventSession, capture files and folders
-        
-        ## Add-NetEventNetworkAdapter options ##
-        # this function prompts the user to select the NIC(s) to capture when there is more than one available NIC
-		[bool]$chooseNics	= $true,					# offers a selection of NICS for capturing packet sniff
-        [Switch]$Trace		= $false,					# perform network sniff, does capture packets
-        [Switch]$NetBase	= $false,					# Network Base Event Tracing
-        ## miscellaneous flags ##
-        [Switch]$PromiscuousMode = $false,				# capture in promiscuous mode (captures all packets whether they are destined for the interface or not, helpful with doing port mirroring (SPAN))
-        [Switch]$noCapture 	= $false,					# does not capture packets, only ETW events
-        #[switch]$persistent = $false,					# capture survives a single reboot
-		[switch]$Auth		= $false,              		#-+ scenario: Authentication logs ^(Kerberos, NTLM, SSL, negoexts, pku2u, Http^), network trace, Procmon, SDP
-		[switch]$Bluetooth  = $false,					# collect Bluetooth events, logs, and data.
-		[switch]$CSVspace 	= $false,					# collect CSV_space ETL-log
-		[switch]$DCOM 		= $false,					# collect DCOM ETL-log, Reg-settings and SecurityDescriptor info
-		[switch]$SysFileVer = $false,					# collect System File Versions
-        [Switch]$psr 		= $false,					# enable Problem Steps Recooder (PSR)
-        [Switch]$Perfmon 	= $false,					# Option/switch to collect Perfmon logging
-        [string]$ProcDump 	= '',						# Option/switch to collect ProcDumps
-        [Switch]$WPR 		= $false,					# Option/switch to collect WPR logging
-		[switch]$ProcMon 	= $false,					# option to collect ProcMon logging
-		[switch]$MsInfo32 	= $false,					# collect MSinfo32
-		[switch]$GPresult 	= $false,					# collect GPresult
-		[switch]$BITS 		= $false,					# collect BITS events, logs, and data.
-		[switch]$DFSsrv		= $false,					# collect DFS server ETL-log and Eventlog
-		[switch]$DAsrv 		= $false,					# collect DirectAccess server ETL-log and Eventlog
-		[switch]$DHCPcli 	= $false,					# collect DHCP client events, logs, and data.
-		[switch]$DHCPsrv 	= $false,					# collect DHCP server events, logs, and data.
-		[switch]$DNScli 	= $false,					# collect DNS client events, logs, and data.
-		[switch]$DNSsrv 	= $false,					# collect DNS server events, logs, and data.
-		[switch]$HyperV 	= $false,					# collect Hyper-V server events, logs, and data.
-		[switch]$IPsec 		= $false,					# collect IPsec events
-		[switch]$LBFO 		= $false,					# collect LBFO teaming events
-		[switch]$NetIso 	= $false,					# collect Network Isolation events, logs, and data.
-		[switch]$NPS 		= $false,					# collect Network Policy Server NPS events, logs, and data.
-		[switch]$RAS 		= $false,					# collect Server/Client RAS events, logs, and data.
-		[switch]$RDMA 		= $false,					# collect RDMA events, logs, and data.
-		[switch]$SMBcli		= $false,					# collect SMB client events, logs, and data.
-		[switch]$SMBsrv		= $false,					# collect SMB File Server events, logs, and data.
-		[switch]$SMBshareWatch= $false,					# collect SMB File Server Watch events, logs, and data.
-		[switch]$WinHTTP 	= $false,					# collect WinHTTP events, logs, and data.
-		[switch]$Wireless 	= $false,					# collect Wireless events, logs, and data. On Surface, add -Surface
-		[switch]$WLAN    	= $false,					# collect WLAN/Wireless events, logs, and data. On Surface, add -Surface
-		 [Switch]$Surface	= $false,					# use Surface WiFi debug options
-		[switch]$WWAN 		= $false,					# collect WWAN events, logs, and data.
-		[switch]$WinSock	= $false,					# collect WinSock data.
-        [Switch]$dbg 		= $false,					# use optional debug options for ETL tracing
-		[switch]$NoZip 		= $false,					# use to skip zipping data
-		[switch]$mini 		= $false,            		# collect only minimal data, no supporting information data like Sysinfo, Tasklist, Services, Registry hives
-		[switch]$Ports 		= $false,					# use to get onetime overview of TCP/UDP ports usage by process
-		[int32]$PortExhaust,							# use to collect longterm view of TCP/UDP port usage, script default: 24 h
-		[int32]$BindWatch,								# TCP port watcher, script default port: 3389
-		[int32]$script:EvtHoursBack						# number of hours back, for Eventlog extract, script default: 0 = no limit
+	## session parameters ##
+	[string]$tracePath = "$ENV:SYSTEMDRIVE\MS_DATA",# base file path for the data collection
+	[string]$Date_time = "$(Get-Date -Format "yyyyMMdd_HHmmss")",	# base name used for NetEventSession, capture files and folders
+	
+	## Add-NetEventNetworkAdapter options ##
+	# this function prompts the user to select the NIC(s) to capture when there is more than one available NIC
+	 [bool]$chooseNics	= $true,					# offers a selection of NICS for capturing packet sniff
+	
+	# Define which EventLogNames should be collected; either you pass the full Eventlogname or a mask like "*Hyper*"
+    # To check out what the Eventlog names look like for e.g. Hyper-V: Get-WinEvent -ListLog "*Hyper-V*"
+    $EventLogNames=(
+        "System", 
+        "Application", 
+        "*CSVFS*" 
+        #"*Smb*", 
+        #"*winrm*", 
+        #"*wmi*", 
+        #"*spaces*",
+        #"*Hyper-V*",
+        #"Microsoft-Windows-FailoverClustering/Operational" 
+    ),
+	#region  ::::: Switches ::::: 
+	[switch]$NetInfo 	= $false,     				# If $NetInfo is true, we call GatherNetInfoPerHost to collect network related information
+	[Switch]$Trace		= $false,					# perform network sniff, does capture packets
+	[Switch]$NetBase	= $false,					# Network Base Event Tracing
+	## miscellaneous flags ##
+	[Switch]$PromiscuousMode = $false,				# capture in promiscuous mode (captures all packets whether they are destined for the interface or not, helpful with doing port mirroring (SPAN))
+	[Switch]$noCapture 	= $false,					# does not capture packets, only ETW events
+	#[switch]$persistent = $false,					# capture survives a single reboot
+	[switch]$Auth		= $false,	      			#-+ scenario: Authentication logs ^(Kerberos, NTLM, SSL, negoexts, pku2u, Http^), network trace, Procmon, SDP
+	[switch]$Bluetooth  = $false,					# collect Bluetooth events, logs, and data.
+	[switch]$CSVspace 	= $false,					# collect CSV_space ETL-log
+	[switch]$DCOM 		= $false,					# collect DCOM ETL-log, Reg-settings and SecurityDescriptor info
+	[switch]$SysFileVer = $false,					# collect System File Versions
+	[Switch]$psr 		= $false,					# enable Problem Steps Recooder (PSR)
+	[Switch]$Perfmon 	= $false,					# Option/switch to collect Perfmon logging
+	[string]$ProcDump 	= '',						# Option/switch to collect ProcDumps of process at stop
+	[Switch]$WPR 		= $false,					# Option/switch to collect WPR logging
+	[switch]$ProcMon 	= $false,					# option to collect ProcMon logging
+	[switch]$MsInfo32 	= $false,					# collect MSinfo32
+	[switch]$GPresult 	= $false,					# collect GPresult
+	[switch]$BITS 		= $false,					# collect BITS events, logs, and data.
+	[switch]$DFSsrv		= $false,					# collect DFS server ETL-log and Eventlog
+	[switch]$DAsrv 		= $false,					# collect DirectAccess server ETL-log and Eventlog
+	[switch]$DHCPcli 	= $false,					# collect DHCP client events, logs, and data.
+	[switch]$DHCPsrv 	= $false,					# collect DHCP server events, logs, and data.
+	[switch]$DNScli 	= $false,					# collect DNS client events, logs, and data.
+	[switch]$DNSsrv 	= $false,					# collect DNS server events, logs, and data.
+	[switch]$HyperV 	= $false,					# collect Hyper-V server events, logs, and data.
+	[switch]$IPsec 		= $false,					# collect IPsec events
+	[switch]$LBFO 		= $false,					# collect LBFO teaming events
+	[switch]$NetIso 	= $false,					# collect Network Isolation events, logs, and data.
+	[switch]$NPS 		= $false,					# collect Network Policy Server NPS events, logs, and data.
+	[switch]$RAS 		= $false,					# collect Server/Client RAS events, logs, and data.
+	[switch]$RDMA 		= $false,					# collect RDMA events, logs, and data.
+	[switch]$SMBcli		= $false,					# collect SMB client events, logs, and data.
+	[switch]$SMBsrv		= $false,					# collect SMB File Server events, logs, and data.
+	[switch]$SMBshareWatch= $false,					# collect SMB File Server Watch events, logs, and data.
+	[switch]$WinHTTP 	= $false,					# collect WinHTTP events, logs, and data.
+	[switch]$Wireless 	= $false,					# collect Wireless events, logs, and data. On Surface, add -Surface
+	[switch]$WLAN    	= $false,					# collect WLAN/Wireless events, logs, and data. On Surface, add -Surface
+	 [Switch]$Surface	= $false,					# use Surface WiFi debug options
+	[switch]$WorkFolders= $false,					# option to collect WorkFolders client and server logging	
+	[switch]$WWAN 		= $false,					# collect WWAN events, logs, and data.
+	[switch]$WinSock	= $false,					# collect WinSock data.
+	[Switch]$dbg 		= $false,					# use optional debug options for ETL tracing
+	[switch]$NoZip 		= $false,					# use to skip zipping data
+	[switch]$mini 		= $false,            		# collect only minimal data, no supporting information data like Sysinfo, Tasklist, Services, Registry hives
+	[switch]$Ports 		= $false,					# use to get onetime overview of TCP/UDP ports usage by process
+    #endregion  ::::: Switches :::::
+	[int32]$PortExhaust,							# use to collect longterm view of TCP/UDP port usage, script default: 24 h
+	[int32]$BindWatch,								# TCP port watcher, script default port: 3389
+	[int32]$script:EvtHoursBack						# number of hours back, for Eventlog extract, script default: 0 = no limit
 )
 
-$ScriptVer = "1.05"	#Date: 2018-11-19
+$ScriptVer = "1.06"	#Date: 2018-12-02
 Write-Host "*** v$ScriptVer - Don't click inside the script window while processing as it will cause the script to pause. ***"  -ForegroundColor Yellow
 #endregion ::::: Script Input PARAMETERS :::::
 
 
-#region ::::: Global Variables ::::: 
-    # Section for global variables, which you don´t want to show up in the parameter region        
-    [bool]$IsCluster = $False						# define script scope variable, whether we are running the script on a cluster or not
-    $TimeStampScriptStart = Get-Date				# get the timestamp, when this script starts
-    $TimeStampStartSaved = $TimeStampScriptStart	# only first time save the script start timestamp
-    
-#endregion ::::: Global Variables ::::: 
+#region ::::: Define Global Variables ::::: 
+    # Section for global variables, which you don´t want to show up in the Script input parameter region        
+    [bool]$IsClusSvcRunning = $False	# variable, to save status of cluster service running/stopped 
+	[string]$LogSeparator = '################################################################################################################'
+#endregion ::::: Define Global Variables ::::: 
 
 
 #region ::::: FUNCTIONS :::::
@@ -292,14 +318,14 @@ Component options:
 	-DHCPsrv         # collect DHCP server events, logs, and data.
 	-DNScli          # collect DNS client events, logs, and data.
 	-DNSsrv          # collect DNS server events, logs, and data.
-	-EvtHoursBack         # number of hours back, for Eventlog
+	-EvtHoursBack    # number of hours back, for Eventlog
 	-GPresult        # collect GPresult
 	-HyperV          # collect Hyper-V server events, logs, and data.
 	-MsInfo32        # collect MSinfo32
 	-NetIso          # collect Network Isolation events, logs, and data.
 	-NPS             # collect Network Policy Server NPS events, logs, and data.
 	-Perfmon         # option to collect Perfmon logging
-	-ProcDump Pname.exe # option to collect ProcDumps of process
+	-ProcDump Pname.exe # option to collect ProcDumps of process at stop
 	-ProcMon         # option to collect ProcMon logging
 	-PSR             # enable Problem Steps Recooder (PSR)
 	-SMBcli          # collect SMB client events, logs, and data.
@@ -311,6 +337,7 @@ Component options:
 	-Wireless        # collect Wireless events, logs, and data. On Surface, add -Surface
 	-WLAN            # collect WLAN/Wireless events, logs, and data. On Surface, add -Surface
 	 -Surface        # use Surface WiFi debug options
+	-WorkFolders     # option to collect WorkFolders client and server logging	
 	-WPR             # option to collect WPR logs
 	-WWAN            # collect WWAN events, logs, and data.
 
@@ -322,7 +349,417 @@ Utils:
 	-BindWatch portNr # TCP port watcher, stop once rebind of given port happens, default port: 3389
 "
 }
+
+#function ShowProgress - Global parameters
+$sTimeStampScriptStart= [String](Get-Date -Format 'yyyyMMdd-HHmmss')
+$TimeStampScriptStart = Get-Date				         # get the timestamp, when this script starts
+$TimeStampStartSaved  = $Script:TimeStampScriptStart	 # only first time save the script start timestamp
+
+$DebugLogPath         = $LogPath                         # Directory, where the logs are stored
+$DebugLogPathFull     = "$DebugLogPath\_psTss_$sTimeStampScriptStart`-ScriptDebug.log"   # FullPath of the Scripts Debug.log
+$DebugLogLevel        = 3                                # If DebugLogLevel is 3 everything is logged; 0 is disabled, 1=Light, 2= Medium, 3=All
+$DebugLogBuffer       = @()                              # Collect DebugLog Messages in ShowProgress and save them later to a file
+$DebugLogCount        = 0                                # Counter for DebugLogs
+$DebugLogCountMax     = 50                               # After X Messages Save to file 
+$DebugLogToFile       = $True                            # Default is True, so we spew out the Debug Messages to a File 
+$RunOnlyOnce          = $True                            # Bool to spew out some Messages only once
+$ScriptFullName       = $MyInvocation.InvocationName     # Full Path of the Script Name
+
+function ShowProgress { 
+# SYNOPSIS: show what we are doing so far; should be placed on top of all other functions
+    param(
+        $MessageUser = "",		      # pass your own message
+        $ForeColor =  "White"	      # default ForeGroundColor is White        
+    )
+    
+    If ($Script:DebugLogLevel -eq 0 ) { Return } # If DebugLogLevel is 0 exit this function imediately      
+    
+    # Get the function name, that was calling ShowProgress
+    function GetFunctionName ([int]$StackNumber = 1) {
+        # https://stackoverflow.com/questions/3689543/is-there-a-way-to-retrieve-a-powershell-function-name-from-within-a-function
+        return [string]$(Get-PSCallStack)[$StackNumber].FunctionName
+    }
+    $TimeDisplay = [String](Get-Date -Format 'yyMMdd-HHmmss') # time stamp to display on each action/function call. eg 'yyMMdd-HHmmss'
+    $TimeStampCurrent = Get-Date
+    $TimeDiffToStart = $TimeStampCurrent - $TimeStampScriptStart		# overall duration since start of script
+    $TimeDiffToLast =  $TimeStampCurrent - $Script:TimeStampStartSaved	# time elapsed since the last action
+	$Script:TimeStampStartSaved = $TimeStampCurrent						# update/save timestamp to measure next progress duration
+    $FuncName =  GetFunctionName -StackNumber 2							# Last Function Name
+    [String]$DurScriptDisplay = "" + $TimeDiffToStart.Minutes + ":" + $TimeDiffToStart.Seconds	# " ;Script ran for Min:Sec  = " # display duration since script start
+    [String]$DurFunctionDisplay = "" + $TimeDiffToLast.Minutes +  ":" + $TimeDiffToLast.Seconds	# " ;Last Action took Min:Sec= " # display duration of last action or function call
+    if (-not ($TimeDiffToLast.TotalSeconds -ge 1) ) { $DurFunctionDisplay = "0:0" }
+
+    If ($RunOnlyOnce){ # Only first time write the head line to explain the columns        
+        $Description= "Script Started at $sTimeStampScriptStart ScriptFullName: $ScriptFullName on Host: $($Env:ComputerName) "        
+        If (-Not ( Test-Path -Path $DebugLogPath ) ){ # if the DebugLogPath does not already exist, e.g. default is c:\MSDATA, then Create it 
+            [void](New-Item -Path $DebugLogPath -ItemType Directory)
+        }
+        write-host -fore Green $Description
+        $Description | Out-File -FilePath $DebugLogPathFull -Append
+
+        $Description= "TimeStamp    |TimeSinceScriptStarted Min:Sec|DurationOfLastAction Min:Sec|FunctionName| UserMessage"
+        write-host $Description
+        $Description | Out-File -FilePath $DebugLogPathFull -Append
+        $Script:RunOnlyOnce= $False
+    }
+    $FullString= "$TimeDisplay|$DurScriptDisplay|$DurFunctionDisplay|$FuncName| $MessageUser"
+    write-host -Fore $ForeColor $FullString
+    
+    # if $DebugLogToFile is $True store output in the Logfile
+    if ($DebugLogToFile){
+        $Script:DebugLogCount++
+        $Script:DebugLogBuffer+= $FullString
+        if ($Script:DebugLogCount -ge $DebugLogCountMax) {
+            write-host -ForegroundColor Gray "Flushing DebugLogBuffer to $DebugLogPathFull"
+            $Script:DebugLogBuffer | Out-File -FilePath $DebugLogPathFull -Append
+
+            $Script:DebugLogCount= 0    # Reset DebugLogCount to 0
+            $Script:DebugLogBuffer= @() # Reset DebugLogBuffer to empty String        
+        }
+    }
+} # End of ShowProgress
+
+# Checkout if the script runs as admin
+function DoIRunAsAdmin{ 
+    $currentPrincipal = New-Object Security.Principal.WindowsPrincipal `
+                        ( [Security.Principal.WindowsIdentity]::GetCurrent() ) 
+    if ($currentPrincipal.IsInRole( [Security.Principal.WindowsBuiltInRole]::Administrator )) { 
+        return $true  
+    } 
+    else { 
+       return $false 
+    } 
+} # End of DoIRunAsAdmin
+
+function CreateFolder { 
+    # SYNOPSIS: a general function to create any folder, do some checks and do reporting
+    Param(
+        $HostName,
+        $FolderPath
+    )
+    ShowProgress  -Fore Gray "Enter"
+    $ErrorActionPreferenceSave =  $ErrorActionPreference # Save the current ErrorActionPreference
+    $ErrorActionPreference = 'Stop'   # Change ErrorActionPreferrence to stop in order to prevent the cmdlet to handle the error on its own
+    
+    if (-not (Test-Path $FolderPath) ){ # if the folder does not already exist
+        ShowProgress "...On Node:$HostName creating folder: $FolderPath"
+
+        try{
+            ShowProgress "try:CreateFolder: $FolderPath"
+            Invoke-Command -ComputerName $HostName -ScriptBlock {		        # Make it all remote capable 
+                New-Item -Path $Using:FolderPath -ItemType Directory | Out-Null	# Create folder, could be remote and suppress output
+            }
+            ShowProgress "Folder $FolderPath could be created successfully"  
+            #ShowProgress "...On Node:$HostName finished creating folder: $FolderPath"    
+        }
+        Catch{ # since ErrorActionPreference is on 'Stop' we jump into the catch block if New-Item failed 
+            ShowProgress -Fore red "Catch: Error during Folder Creation"  # we ran into an issue 
+            ShowProgress -Fore red "Unable to create the Folder $FolderPath on $HostName " 
+            ShowProgress -Fore Red "FullQualifiedErrorId: $($Error[0].FullyQualifiedErrorId)"
+            ShowProgress -Fore Red "Full ErrorMessage:$_"
+            If ($Error[0].FullyQualifiedErrorId -like "AccessDenied*"){ 
+                ShowProgress -Fore Magenta "Please check if you are running the powershell host (window) with administrative privileges" 
+            }
+            If ($Error[0].FullyQualifiedErrorId -like "*server name cannot be resolved*"){                 
+                $HostNameFQDN= [System.Net.Dns]::GetHostEntry($HostName).HostName  
+                ShowProgress -Fore Magenta "Looks like the Server Name could not be resolved. [System.Net.Dns]::GetHostEntry(`$HostName):$HostNameFQDN "
+            }
+                        
+            ShowProgress -ForeColor Yellow -BackColor Black "Aborting this script now " 
+            EXIT           
+        }        
+    }   
+    $ErrorActionPreference = $ErrorActionPreferenceSave
+    ShowProgress  -Fore Gray "Exit"
+} # End of CreateFolder
+
+
+function CreateLogFolderOnHosts { 
+# SYNOPSIS: could be only one
+    param(
+        $ComputerNames,
+        $LogPath
+    )
+    ShowProgress "...Start creating Log folder on Hosts: $ComputerNames"                
+    foreach($ComputerName in $ComputerNames){
+        ShowProgress "...Start creating Log folder on Host:$ComputerName"                
+        $LogPathDollar = $LogPath.Replace(":","$")				# e.g. C:\MS-Data --> C$\MS-Data
+        $LogPathUNC = "\\$($ComputerName)\$LogPathDollar"		# e.g. \\H16N2\c$\MS-Data                
+        CreateFolder -HostName $ComputerName -FolderPath $LogPathUNC
+    }
+    ShowProgress "...Finished creating log folder on hosts"
+}  
+
+function MoveDataFromAllComputersToLocalComputer { 
+# SYNOPSIS: move remotly collected data to local folder, e.g. C:\MS_DATA\180925-101214
+    param(
+        $ComputerNames        
+    )
+    ShowProgress  -Fore Gray "Enter"
+    $LocalHost = $env:COMPUTERNAME    
+    $LogPathLocal = $Script:LogPath   # LogPath e.g. c:\MS_DATA
+    $ErrorActionPreferenceSave =  $ErrorActionPreference # Save the current ErrorActionPreference
+    $ErrorActionPreference = 'Stop'   # Change ErrorActionPreferrence to stop in order to prevent the cmdlet to handle the error on its own
+    $WaitSec = 10                     # Wait for a couple of seconds; default 10 seconds
+
+    ShowProgress "...Start moving all data files from all Hosts:$ComputerNames to local Host:$LocalHost"                
+    foreach($ComputerName in $ComputerNames){
+        if (-not ($ComputerName -eq $LocalHost) ){            
+            $LogPathDollar = $LogPath.Replace(":","$")                  # e.g. $LogPath = C:\MS_DATA --> C$\MS_DATA
+            $LogPathRemoteUNC   = "\\$($ComputerName)\$LogPathDollar"   # e.g. \\H16N2\c$\MS_DATA               
+            ShowProgress "...Start moving files from $LogPathRemoteUNC to $LogPathLocal"   
+
+            # Sometimes the remote path is not reachable, so we check out and handle this one time
+            # if it becomes a reoccuring issue we should run this in a loop and try several times 
+            try{
+                ShowProgress "...trying to reach LogPath: Get-ChildItem -Path $LogPathRemoteUNC "
+                $RemoteFiles = Get-ChildItem -Path $LogPathRemoteUNC # Check if the remote path  $LogPathRemoteUNC is reachable
+            }
+            Catch{ # since ErrorActionPreference is on 'Stop' we jump into the catch block if Get-ChildItem reported an error
+                ShowProgress -Fore DarkMagenta "Catch: Could not reach remote Path: $LogPathRemoteUNC"  # we had an issue - lets wait and do the move then
+                ShowProgress -Fore DarkMagenta "Let´s wait for some seconds:$WaitSec ... and try again" 
+                Start-Sleep -Seconds $WaitSec                
+            }
+            finally{
+                ShowProgress "Finally: Moving Remote files to Local Host "                
+                ShowProgress "...trying to collect all data files from all Hosts:$ComputerNames to local Host:$LocalHost ..."
+                Move-Item -Path $LogPathRemoteUNC\* -Destination $LogPathLocal  # Move Files to Local Path       
+            }
+        }
+    }
+    $ErrorActionPreference = $ErrorActionPreferenceSave
+    ShowProgress "...Finished moving all data files from all Hosts:$ComputerNames to local Host:$LocalHost"                
+    ShowProgress  -Fore Gray "Exit"
+} # End of MoveDataFromAllComputersToLocalComputer
+
 #endregion ::::: Helper Functions ::::
+
+#region ::::: Worker Functions ::::::
+
+function GetEventLogs {
+# SYNOPSIS: collect eventlogs from all machines
+    param(
+        $ComputerNames,                 # the name or a list of names of the computers, local or remote you want to gather Eventlogs from
+        $HoursBack = $Script:HoursBack,  # Define how much hours we should look back in the logs; Default is script scope variable $HoursBack
+        $LogNames                       # list of event log names; either you pass the full Event Log name like "System" or a mask like "*Hyper*"
+                                        # Sample: $EventLogNames=("System", "Application", "*CSVFS*")
+    )
+    ShowProgress  -Fore Gray "Enter"
+    foreach($ComputerName in $ComputerNames){
+        # Gather all EventLogs from current ComputerName, extract only last # of hours
+        # Walk through each LogName in LogNames e.g. ("System", "Application", "*CSVFS*")
+        foreach($LogName in $LogNames){        
+            $LogFamilyNames = Get-WinEvent -ListLog $LogName -ErrorAction SilentlyContinue  # $LogFamilyNames could be a mask representing several Logs - a LogFamily - e.g. *SMB*
+
+            # if the LogName does not exist on this computer spew out a message
+            If ( $LogFamilyNames -eq $Null) {
+                ShowProgress -Fore DarkMagenta "Could not find the following Log on this Computer: $LogName"
+            }
+
+            # if a Pattern like *SMB* has been passed - walk through each Logname         
+            foreach($LogFamilyName in $LogFamilyNames){ # Microsoft-Windows-SmbClient/Audit, Microsoft-Windows-SMBServer/Audit and so on
+                $LogFileName = ($LogFamilyName.LogName).Replace("/","_") # Replace Forward Slash in EventLogNames with UnderScore
+
+                $LogPathDollar = $LogPath.Replace(":","$")            # e.g. C:\MS-Data --> C$\MS-Data
+                $LogPathUNC   = "\\$($ComputerName)\$LogPathDollar"  # e.g. \\H16N2\c$\MS-Data                
+                    
+                $LogFileNameXML =  "$LogPathUNC\$ComputerName" + "_" + $LogFileName + ".XML"
+                $LogFileNameTXT =  "$LogPathUNC\$ComputerName" + "_" + $LogFileName + ".Txt"
+                $LogFileNameEvtx = "$LogPathUNC\$ComputerName" + "_" + $LogFileName + ".evtx"
+                
+                ShowProgress "...Start gathering EventLog:$($LogFamilyName.LogName) for Computer:$ComputerName"
+
+                # Collecting EventLogs respecting HoursBack
+                $StartTime = (Get-Date).AddHours(-$HoursBack) 
+                # Using a Filter Hash Table to filter events that match $MinutesBack
+                # More Info:  https://blogs.technet.microsoft.com/heyscriptingguy/2014/06/03/use-filterhashtable-to-filter-event-log-with-powershell/
+                $Evts = Get-WinEvent -ComputerName $ComputerName -ErrorAction SilentlyContinue  -FilterHashtable @{Logname=$LogFamilyName.LogName; StartTime=$StartTime}
+
+                #Sorting Events and selecting properties we really need
+                $EvtsSorted = $Evts | Sort TimeCreated -Descending | Select TimeCreated, LevelDisplayName, ProviderName, Id,  Message 
+                                      
+                # Export Events to deserialized *.xml file
+                $EvtsSorted | Export-CliXml -Path $LogFileNameXML
+                # Export Events as simple *.txt file
+                $EvtsSorted | Export-Csv -Path $LogFileNameTXT -NoTypeInformation
+                            
+                # Gathering Eventlogs in old style *.evtx with wevtutil.exe 
+                #ShowProgress "....Gathering *.evtx with Old-Style-Tool:wevtutil"
+                $MilliSecondsBack = $HoursBack * 60 * 60 * 1000
+                wevtutil.exe /remote:$ComputerName epl $LogFamilyName.LogName $LogFileNameEvtx /q:"*[System[TimeCreated[timediff(@SystemTime) <=$MilliSecondsBack]]]" /ow:true
+                        
+                #ShowProgress "....Finished gathering $($LogFamilyName.LogName) for Computer:$ComputerName"
+                #ShowProgress "-----------------------------"
+            }            
+        }
+    }
+    ShowProgress  -Fore Gray "Exit"
+}
+
+ 
+function IfClusterGetNodeNames{ 
+# SYNOPSIS: Test nodes connection and create a list of reachable nodes
+    param(
+        $ClusterName 
+    )
+    ShowProgress  -Fore Gray "Enter"
+    $ErrorActionPreferenceNow= $ErrorActionPreference
+    $ErrorActionPreference= 'Stop'
+	$LocalComputerName = $env:COMPUTERNAME
+    # Checkout if the cluster service is answering on this node
+    try{ 
+        # Check if the cluster service is running 
+        if ( (Get-Service -Name ClusSvc).Status -eq "Running"  ){
+            ShowProgress -Fore Green "Cluster Service is running on this computer: $LocalComputerName"
+            $Script:IsClusSvcRunning = $True
+        }
+        else { # if we are on a cluster, but the cluster service is not running we land here
+            $Script:IsClusSvcRunning= $False
+            ShowProgress -Fore DarkMagenta "Cluster Service 'clussvc' is not running on this computer " 
+            ShowProgress  -Fore Gray "Exit"
+            RETURN $LocalComputerName # Return local ComputerName, if this computer is not running cluster service to gather Logs from this Host
+        }
+    } 
+    
+    catch{ # if we are not on a cluster at all we are landing here 
+        ShowProgress -Fore DarkMagenta " 'Get-Service -Name ClusSvc' did not answer - looks if we have no Cluster Service on this computer " 
+        ShowProgress  -Fore Gray "Exit"
+        RETURN $LocalComputerName # Return local ComputerName, if this computer is not running cluster service to gather Logs from this Host
+    }
+    # if cluster service did not answer we do not reach the following code 
+
+    # if cluster service answered we reached this code and will Test Network Connections to all Cluster Nodes
+    ShowProgress "...Start testing if we can reach the Cluster Nodes over the network"
+    $GoodNodeNames = @()  # Cluster Nodes we can reach over the network
+    $BadNodeNames =  @()  # Cluster Nodes we can not reach over the network
+
+    $ClusterNodeNames= (Get-ClusterNode).NodeName
+    foreach($ClusterNodeName in $ClusterNodeNames){ 
+        if (Test-Connection -ComputerName $ClusterNodeName -Count 1 -Quiet){ # test network connection
+            $GoodNodeNames += $ClusterNodeName
+        }
+        else {
+            $BadNodeNames += $ClusterNodeName
+        }
+    }
+    $Nodes = [PSCustomObject]@{
+        Good = $GoodNodeNames
+        Bad =  $BadNodeNames
+    }
+        
+    ShowProgress -Fore Green   "   - Could connect to Cluster Nodes: $($Nodes.Good)"
+    if ($Nodes.Bad -ne $Null){
+        ShowProgress -Fore Red "   - Could not connect to Cluster Nodes: $($Nodes.Bad)" 
+    }
+    else{
+        ShowProgress "   - Could connect to all Cluster Nodes" -ForeColor "green"
+
+    }
+    ShowProgress "...Finished testing network connection to Cluster Nodes"
+    $ErrorActionPreference= $ErrorActionPreferenceNow
+    ShowProgress  -Fore Gray "Exit"
+    Return $Nodes.Good # Return only the Good Nodes we can reach    
+}
+
+
+function GetNetInfoPerHost{
+# SYNOPSIS: collect network related info on each host
+    param(
+            $ComputerNames           
+    )
+    if ($Script:NetInfo -eq $false) { RETURN } # if the switch $NetInfo is false exit this function and do not collect any Net-data here
+    ShowProgress  -Fore Gray "Enter"
+    $LogPathLocal = $Script:LogPath   # LogPath e.g. C:\MS_DATA
+    foreach($ComputerName in $ComputerNames){          
+        
+        ShowProgress "...Start gathering network info on Computer:$ComputerName "
+
+        $net = [PSCustomObject][ordered]@{  
+            ComputerName =         $ComputerName
+            NetIpconfig =      Get-NetIPConfiguration -CimSession $ComputerName
+            Ipconfig =         Ipconfig /all
+
+            SmbMultichannelConnection = Get-SmbMultichannelConnection -CimSession $ComputerName
+            SmbServerConfiguration = Get-SmbServerConfiguration -CimSession $ComputerName
+            SmbConnection = Get-SmbConnection -CimSession $ComputerName
+            SmbSession = Get-SmbSession -CimSession $ComputerName
+            SmbBandWidthLimit = Get-SmbBandWidthLimit -CimSession $ComputerName -ErrorAction SilentlyContinue
+            SmbServerNetworkInterface = Get-SmbServerNetworkInterface -CimSession $ComputerName
+            SmbMultichannelConstraint = Get-SmbMultichannelConstraint -CimSession $ComputerName
+            SmbWitnessClient = Get-SmbWitnessClient -CimSession $ComputerName
+
+            NIC = Get-NetAdapter -CimSession $ComputerName
+            NICAdv = Get-NetAdapterAdvancedProperty -CimSession $ComputerName -Name *
+            NICBind = Get-NetAdapterBinding -CimSession $ComputerName –Name *
+            NICRxTx = Get-NetAdapterChecksumOffload -CimSession $ComputerName -Name *
+            NICHW = Get-NetAdapterHardwareInfo -CimSession $ComputerName -Name *
+            NICRIpsec = Get-NetAdapterIPsecOffload -CimSession $ComputerName -Name *
+            NICLso = Get-NetAdapterLso -CimSession $ComputerName -Name *
+            NICQos = Get-NetAdapterQos -CimSession $ComputerName –Name *
+
+            NICREnc = Get-NetAdapterEncapsulatedPacketTaskOffload -CimSession $ComputerName -Name *
+            NICRdma = Get-NetAdapterRdma -CimSession $ComputerName –Name *
+            NICRsc = Get-NetAdapterRsc -CimSession $ComputerName –Name *
+            NICRss = Get-NetAdapterRss -CimSession $ComputerName –Name *
+            NICSriov = Get-NetAdapterSriov -CimSession $ComputerName –Name *
+            NICVmqQueue = Get-NetAdapterVmqQueue -CimSession $ComputerName –Name *
+            NICVmq = Get-NetAdapterVmq -CimSession $ComputerName –Name *
+        }
+        
+        # Export Info from each Node in a Separate File
+        $net | Export-CliXML -Path "$LogPathLocal\$($ComputerName)-NetInfoPerNode.xml"
+        ShowProgress "...Finished gathering network Info per computer and stored in $LogPathLocal\$($ComputerName)-NetInfoPerNode.xml"        
+        ShowProgress  -Fore Gray "Exit"
+    }
+}    
+
+
+# Collect Computer specific Data from each Cluster Node
+function GatherGeneralInfoPerNode{
+    param(
+        $ComputerNames
+    )
+    ShowProgress  -Fore Gray "Enter"
+    $LogPathLocal = $Script:LogPath
+    foreach($ComputerName in $ComputerNames){       
+        # Read Current Windows Version from the Registry 
+        $WinNTKey= Invoke-Command -ScriptBlock { Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion" }
+        $WinVer= $WinNTKey | Select ProductName, InstallationType, ReleaseId, CurrentMajorVersionNumber, CurrentMinorVersionNumber, CurrentBuild, UBR
+        $WinVerGUI= "$($WinVer.ProductName) - Microsoft Windows $($WinVer.InstallationType) - Version $($WinVer.ReleaseId) (OS Build $($WinVer.CurrentBuild).$($WinVer.UBR)) "
+        
+        $GenInf= [PSCustomObject][ordered]@{  
+            HostName=         $ClusterNode.Name
+            Hotfix=           Get-Hotfix -ComputerName $ClusterNode            
+            WinVer=           $WinVer
+            WinVerGUI=        $WinVerGUI
+            ComputerInfo=     Get-ComputerInfo
+            PSVersionTable=   $PSVersionTable        
+
+        }        
+        # Export Info from each Node in a Separate File
+        ShowProgress "Export General Info: HostName, Hotfix, Winver, ComputerInfo, PSVersionTable from Host: $ComputerName"
+        $GenInf | Export-CliXML -Path "$LogPathLocal\$($ClusterNode.Name)-GeneralInfoPerNode.xml"
+        ShowProgress "...Finished Gathering GeneralInfoPerNode - stored in $LogPathLocal\$($ClusterNode.Name)-GeneralInfoPerNode.xml"; write-host
+                        
+    }    
+    ShowProgress  -Fore Gray "Exit"
+}
+
+function 5120 {
+    # SYNOPSIS:  collect data for symptom System Event ID 5120
+    ShowProgress  -Fore Gray "Enter"    
+    $ComputerNames = IfClusterGetNodeNames # Check if Cluster Service answers on the current computer; if yes get the node names we can reach over network
+    CreateLogFolderOnHosts -ComputerNames $ComputerNames -LogPath $LogPath # Create data folder on all computers - it could be only one
+
+    GetNetInfoPerHost -ComputerNames $ComputerNames
+
+    MoveDataFromAllComputersToLocalComputer -ComputerNames $ComputerNames
+
+    # Do the work longer running parts
+    GetEventLogs  -ComputerNames $ComputerNames -HoursBack $HoursBack -LogNames $EventLogNames
+    ShowProgress  -Fore Gray "Exit"
+}
+
 
 function Trace-Nic {
 # SYNOPSIS: get a NIC if there are multiple, helps with packet dupes with teaming/Hyper-V
@@ -494,7 +931,7 @@ function Add-Log {
     } else {
         $color = "green"
     }
-    Write-Host -ForegroundColor $color "$(get-date -format "yyyy-MM-dd HH:mm:ss")`: $str"
+    Write-Host -ForegroundColor $color "$(Get-Date -Format "yyyy-MM-dd HH:mm:ss")`: $str"
 } # end Add-Log
 
 
@@ -515,13 +952,13 @@ function Copy-Log {
         return $false
     } else {
         # get the log path, in PowerShell format, of the log
-        $logPath = (Get-WinEvent -ListLog $logName).LogFilePath -replace [regex]::Escape('%SystemRoot%'), "$ENV:SystemRoot"
+        $log_Path = (Get-WinEvent -ListLog $logName).LogFilePath -replace [regex]::Escape('%SystemRoot%'), "$ENV:SystemRoot"
     }
     # set error action so try-catch works
     $ErrorActionPreference = "Stop"
     # try to copy the log file
     Try {
-        Copy-Item $logPath $destination -Force
+        Copy-Item $log_Path $destination -Force
     } catch {
         Write-Log "WARNING: Log file not found for $logName." -tee -foreColor Yellow
         return $false
@@ -543,7 +980,7 @@ function Write-Log {
 		"PowerShell version: $Script:PSver " | Out-File "$script:dataPath\$script:logName" -Append
 		"Start time (UTC):   $((Get-Date).ToUniversalTime())" | Out-File "$script:dataPath\$script:logName" -Append
 		"Start time (Local): $((Get-Date).ToLocalTime()) $(if ((Get-Date).IsDaylightSavingTime()) {([System.TimeZone]::CurrentTimeZone).DaylightName} else {([System.TimeZone]::CurrentTimeZone).StandardName})`n" | Out-File "$script:dataPath\$script:logName" -Append
-        Write-Host "$(get-date -format "HH:mm:ss") Local log file path: $("$script:dataPath\$script:logName")"
+        Write-Host "$(Get-Date -Format "HH:mm:ss") Local log file path: $("$script:dataPath\$script:logName")"
     }
     # write to log
     "$(Get-TimeStamp): $text" | Out-File "$script:dataPath\$script:logName" -Append
@@ -586,6 +1023,41 @@ function Compress-Directory {
     Pop-Location
 }
 
+function Compress-All-Data {
+# SYNOPSIS:  Compresses all data
+ ShowProgress  -Fore Gray "Enter" 
+ if (!$noZip) {
+	# moved to end: wait for msinfo32 to complete
+	if ($MsInfo32) { 
+		Write-Log " ...waiting on MsInfo32 to complete" -tee
+		do
+		{
+			$isDone = Get-Process msinfo32 -EA SilentlyContinue
+			if ($isDone) {Start-Sleep -Seconds 3}
+		} until ($isDone -eq $null -or (Get-Date) -gt $start_info32.AddMinutes(3))
+	}
+
+	Write-Log "$(Get-Date -Format "HH:mm:ss") ...Compressing data. Please be patient." -tee
+	if ($Script:osMajVer -eq 6 -and $Script:osMinVer -le 1)
+	{
+		# cab file path and name
+		$cabFile = "$dataPath\$rootName`_results.cab"
+		# write the final prompt to log before compression to complete the log file
+		Write-Log "Please upload the following file(s) to Microsoft for analysis, when compression finished:`n  $cabFile" -tee -foreColor Yellow
+		Compress-Directory -dir "$dataPath" -cabName "$(Split-Path $cabFile -Leaf)" -cabPath "$(Split-Path $dataPath -Parent)"
+		Write-Host -ForegroundColor Green "$(Get-Date -Format "HH:mm:ss") *** Please upload the following file(s) to Microsoft for analysis:`n  $cabFile"
+	} else {
+		# write the final prompt to log before compression to complete the log file
+		Write-Log "Please upload the following file(s) to Microsoft for analysis, when compression finished:`n  $tracePath\psTss_$ENV:ComputerName`_$Date_time`_Results.zip" -tee -foreColor Yellow
+		Add-Type -AssemblyName System.IO.Compression
+		Add-Type -Assembly "System.IO.Compression.FileSystem"
+		[System.IO.Compression.ZipFile]::CreateFromDirectory("$dataPath", "$tracePath\psTss_$ENV:ComputerName`_$Date_time`_Results.zip")
+		# prompt
+		Write-Host -ForegroundColor Green  "$(Get-Date -Format "HH:mm:ss") *** Please upload the following file(s) to Microsoft for analysis:`n  $tracePath\psTss_$ENV:ComputerName`_$Date_time`_Results.zip"
+	}
+ } else { Write-Log "`n$(Get-Date -Format "HH:mm:ss") *** Please compress all files in $dataPath, upload zip file to MS workspace`n" -tee -foreColor Yellow }
+ ShowProgress  -Fore Gray "Exit" 
+}
 
 function Copy-File {
 # SYNOPSIS: Copies a file to the dataPath
@@ -796,7 +1268,7 @@ function Get-UserShares {
 
 function Get-TimeStamp {
 # SYNOPSIS: Returns a timestamp string
-    return "$(Get-Date -format "yyyyMMdd_HHmmss_ffff")"
+    return "$(Get-Date -Format "yyyyMMdd_HHmmss_ffff")"
 } # end Get-TimeStamp
 
 
@@ -865,6 +1337,33 @@ function Get-Eventlogs {
 	}
 }
 
+function Get-EventsTxt($EventLog, $OutFile)
+# SYNOPSIS: extract Eventlog content in TXT format
+{	$Events = Get-WinEvent $EventLog -MaxEvents 300 -ErrorAction SilentlyContinue
+    if($Events -eq $null)
+    {   # Error occurred - do nothing
+	    Write-Log " $EventLog : No event log entries found." -tee -foreColor Gray
+    }
+    else
+    {   'Number of event log entries collected: ' + $Events.Count | Out-File $OutFile
+	    foreach($Event in $Events)
+	    {   $LogSeparator | Out-File $OutFile -append
+		    $Event | Out-File $OutFile -append
+		    'Full message:' | Out-File $OutFile -append
+		    $Event.Message | Out-File $OutFile -append
+	    }
+    }
+}
+
+function Get-Registry($Path, $OutFile)
+# SYNOPSIS: get the content of Registry keys
+{
+    if ((Test-Path $Path) -eq $true)
+    {
+        Get-Item $Path | Out-File $OutFile -append
+	    Get-ChildItem $Path -Recurse | Out-File $OutFile -append
+    }
+}
 
 function Get-Registry-Info {
 # SYNOPSIS: get the content of Registry keys and LastWriteTime
@@ -1123,6 +1622,271 @@ NOTE: On a 64-bit machine, you will get different results depending on whether o
         }
     }
 } # end Add-RegKeyMember
+
+function Get-WorkFoldersInfo
+# SYNOPSIS: collect WorkFolder client and server info
+{
+	param (
+	  [Parameter(Mandatory=$true, Position=0)] [String] $OutputDirectory,
+	  [Parameter(Mandatory=$false, Position=1)] [Switch] $AdvancedMode = $false,
+	  [Parameter(Mandatory=$false, Position=2)] [Int] $TraceLevel = 255,
+	  [Parameter(Mandatory=$false, Position=3)] [Switch] $Cleanup = $True
+	)
+
+	Write-Host "v$ScriptVer Starting collection of debug information for Work Folders on this machine ..." -ForegroundColor White -BackgroundColor DarkGreen
+	Write-Host "$(Get-Date -Format 'HH:mm:ss') Setting up WorkFoldersDiag environment ..."
+	if ($AdvancedMode) {  	Write-Host "... running in AdvancedMode" }
+	$OldErrorActionPreference = $ErrorActionPreference
+	$ErrorActionPreference = "SilentlyContinue"
+
+	# Validate input
+	$Done = $false
+	while ($Done -eq $false)
+	{
+		if ($OutputDirectory -eq $null)	{	$Done = $false	}
+		elseif ((Test-Path $OutputDirectory) -eq $false) {	$Done = $false	}
+		else {	$Done = $true	}
+
+		if ($Done -eq $false)
+		{	Write-Error "Path selected is invalid."
+			$OutputDirectory = Read-Host "Specify another path for OutputDirectory [Note that all contents already present in this directory will be erased.]"
+		}
+	}
+	while (($TraceLevel -lt 1) -or ($TraceLevel -gt 255))
+	{	$TraceLevel = Read-Host "Invalid trace level specified. Please specify a value between 1 and 255"}
+
+	# Create Temp directory structure to accumulate output + Collect generic info
+	$TempOutputPath = $OutputDirectory + '\Temp'
+	$GeneralDirectory = $TempOutputPath + '\General'
+	New-Item $TempOutputPath -type directory | Out-Null
+	New-Item $GeneralDirectory -type directory | Out-Null
+	$GeneralInfoFile = $GeneralDirectory + '\' + $env:COMPUTERNAME + '_MachineInfo.txt'
+	$LocalVolumesFile = $GeneralDirectory + '\' + $env:COMPUTERNAME + '_LocalVolumes.txt'
+	$ClusterVolumesFile = $GeneralDirectory + '\' + $env:COMPUTERNAME + '_ClusterVolumes.txt'
+	'VersionString: ' + [System.Environment]::OSVersion.VersionString | Out-File $GeneralInfoFile
+	'Version: ' + [System.Environment]::OSVersion.Version | Out-File $GeneralInfoFile -append
+	'ServicePack: ' + [System.Environment]::OSVersion.ServicePack | Out-File $GeneralInfoFile -append
+	'Platform: ' + [System.Environment]::OSVersion.Platform | Out-File $GeneralInfoFile -append
+
+	$OS = Get-WmiObject -class win32_OperatingSystem
+	if ($OS.ProductType -gt 1)
+	{	'OS SKU Type: Server' | Out-File $GeneralInfoFile -append}
+	else
+	{	'OS SKU Type: Client' | Out-File $GeneralInfoFile -append}
+	$Cluster = Get-Cluster -EA SilentlyContinue
+	$IsCluster = $Cluster -ne $null
+	if ($IsCluster) {  'This machine is part of a cluster' | Out-File $GeneralInfoFile -append }
+	else {    'This machine is a stand alone machine, it is not part of a cluster' | Out-File $GeneralInfoFile -append }
+
+	$IsServer = Test-Path ($env:Systemroot + '\System32\SyncShareSvc.dll')
+	$IsClient = Test-Path ($env:Systemroot + '\System32\WorkFoldersSvc.dll')
+
+	if ($IsServer) {
+		'Work Folders server component is installed on this machine.' | Out-File $GeneralInfoFile -append 
+		'List of versions of binaries for the Work Folders server component:' | Out-File $GeneralInfoFile -append
+		$ServerBinaries = @(
+		($env:Systemroot + '\System32\SyncShareSvc.dll'),
+		($env:Systemroot + '\System32\SyncShareSrv.dll'),
+		($env:Systemroot + '\System32\SyncShareTTLib.dll'),
+		($env:Systemroot + '\System32\SyncShareTTSvc.exe')
+		)
+		Foreach($Binary in $ServerBinaries)
+		{ 	[System.Diagnostics.FileVersionInfo]::GetVersionInfo($Binary) | Format-List | Out-File $GeneralInfoFile -append }
+		Copy-Item ($env:Systemroot + '\System32\SyncShareSvc.config') $GeneralDirectory
+		$WFmode = "Server"
+	}
+	if ($IsClient) {
+		'Work Folders client component is installed on this machine.' | Out-File $GeneralInfoFile -append
+		'List of versions of binaries for the Work Folders client component:' | Out-File $GeneralInfoFile -append
+		$ClientBinaries = @(
+		($env:Systemroot + '\System32\WorkFoldersShell.dll'),
+		($env:Systemroot + '\System32\WorkFoldersGPExt.dll'),
+		($env:Systemroot + '\System32\WorkFoldersControl.dll'),
+		($env:Systemroot + '\System32\WorkFoldersSvc.dll'),
+		($env:Systemroot + '\System32\WorkFolders.exe')
+		)
+		Foreach($Binary in $ClientBinaries)
+		{ 	[System.Diagnostics.FileVersionInfo]::GetVersionInfo($Binary) | Format-List | Out-File $GeneralInfoFile -append }
+		$WFmode = "Client"
+	}
+	
+	$WFmodeDirectory = $null
+	$WFmodeDirectory = $TempOutputPath + '\' + $WFmode
+	New-Item $WFmodeDirectory -type directory | Out-Null
+		
+	"List of local volumes:" | Out-File $LocalVolumesFile -append
+	GWMI Win32_Volume | Out-File $LocalVolumesFile -append
+
+	if ($IsCluster)
+	{
+		"List of cluster volumes:" | Out-File $ClusterVolumesFile -append
+		GWMI MSCluster_Resource -Namespace root/mscluster | where-object{$_.Type -eq 'Physical Disk'} |
+			foreach{ GWMI -Namespace root/mscluster -Query "Associators of {$_} Where ResultClass=MSCluster_Disk" } |
+			foreach{ GWMI -Namespace root/mscluster -Query "Associators of {$_} Where ResultClass=MSCluster_DiskPartition" } |
+			Out-File $ClusterVolumesFile -append
+	}
+
+	### Start Work Folders tracing
+	#Write-Host "$(Get-Date -Format 'HH:mm:ss') Start Work Folders $WFmode tracing ..."
+	$TracesDirectory = $TempOutputPath + '\Traces'
+	New-Item $TracesDirectory -type directory | Out-Null
+	$TracingCommand = 'logman start WorkFoldersTrace -o "$TracesDirectory\WorkFoldersTrace.etl" --max -ets -p "{111157cb-ee69-427f-8b4e-ef0feaeaeef2}" 0xffffffff ' + $TraceLevel
+	Invoke-Expression $TracingCommand | Out-Null # start traces
+	$TracingCommand = 'logman start WorkFoldersTraceEFS -o "$TracesDirectory\WorkFoldersTraceEFS.etl" --max -ets -p "{C755EF4D-DE1C-4E7D-A10D-B8D1E26F5035}" 0xffffffff ' + $TraceLevel
+	Invoke-Expression $TracingCommand | Out-Null # start EFS traces
+	$TracingCommand = 'logman start WorkFoldersTraceESE -o "$TracesDirectory\WorkFoldersTraceESE.etl" --max -ets -p "{1284E99B-FF7A-405A-A60F-A46EC9FED1A7}" 0xffffffff ' + $TraceLevel
+	Invoke-Expression $TracingCommand | Out-Null # start ESE traces
+	Write-Host "$(Get-Date -Format 'HH:mm:ss') Work Folders $WFmode Tracing started."
+	
+	### Start Interactive Repro
+	Write-Host "`n === Please reproduce the WorkFolder problem then press the 's' key to stop tracing. ===`n" -ForegroundColor Green
+	do {
+		$UserDone = $host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+	} until ($UserDone.Character -ieq 's')
+	###
+	Write-Host "$(Get-Date -Format 'HH:mm:ss') Collecting WorkFolder traces with TraceLevel $TraceLevel ..."
+
+	Sleep(5) # Allow time to make sure traces get written
+
+	Invoke-Expression 'logman stop WorkFoldersTrace -ets' | Out-Null # stop traces
+	Invoke-Expression 'logman stop WorkFoldersTraceEFS -ets' | Out-Null # stop EFS traces
+	Invoke-Expression 'logman stop WorkFoldersTraceESE -ets' | Out-Null # stop ESE traces
+
+	Write-Host "$(Get-Date -Format 'HH:mm:ss') WorkFolder Tracing stopped."
+
+	###
+	if ($IsServer)
+	{
+		$ServerSetting = Get-SyncServerSetting
+		$Shares = Get-SyncShare
+	}
+
+	if ($AdvancedMode)
+	{
+		if ($IsClient) { Write-Host "$(Get-Date -Format 'HH:mm:ss') Stopping Service WorkFolderssvc."
+						Stop-Service WorkFolderssvc }
+		if ($IsServer) { Write-Host "$(Get-Date -Format 'HH:mm:ss') Stopping Services SyncShareSvc, SyncShareTTSvc."
+						Stop-Service SyncShareSvc
+						Stop-Service SyncShareTTSvc }
+	}
+
+	Write-Host "$(Get-Date -Format 'HH:mm:ss') Saving Work Folders $WFmode configuration information ..."
+	$ConfigDirectory = $WFmodeDirectory + '\Config'
+	New-Item $ConfigDirectory -type directory | Out-Null
+	$RegConfigFile = $ConfigDirectory + '\' + $env:COMPUTERNAME + '_RegistryConfig.txt'
+	$MetadataDirectory = $WFmodeDirectory + '\' + $WFmode + 'Metadata'
+	if ($AdvancedMode) { New-Item $MetadataDirectory -type directory | Out-Null   }
+
+	if ($IsServer)
+	{
+		Get-Registry 'hklm:\SYSTEM\CurrentControlSet\Services\SyncShareSvc' $RegConfigFile
+		Get-Registry 'hklm:\SYSTEM\CurrentControlSet\Services\SyncShareTTSvc' $RegConfigFile
+		$SyncShareSrvHive = 'hklm:\SOFTWARE\Microsoft\Windows\CurrentVersion\SyncShareSrv'
+		if ($IsCluster) { $SyncShareSrvHive = 'hklm:\Cluster\SyncShareSrv' }
+		Get-Registry $SyncShareSrvHive $RegConfigFile
+
+		$ConfigFile = $ConfigDirectory + '\' + $env:COMPUTERNAME + '_CmdletConfig.txt'
+		$LogSeparator | Out-File $ConfigFile -append
+		'Config for sync server:' | Out-File $ConfigFile -append
+		$LogSeparator | Out-File $ConfigFile -append
+		$ServerSetting | Out-File $ConfigFile -append
+		$LogSeparator | Out-File $ConfigFile -append
+		'End config for sync server:' | Out-File $ConfigFile -append
+		$LogSeparator | Out-File $ConfigFile -append
+
+		foreach ($Share in $Shares)
+		{
+			$LogSeparator | Out-File $ConfigFile -append
+			'Config for sync share ' + $Share.Name | Out-File $ConfigFile -append
+			$LogSeparator | Out-File $ConfigFile -append
+			$Share | Out-File $ConfigFile -append
+
+			$acl = Get-Acl $Share.Path -EA SilentlyContinue
+			'ACLs on ' + $Share.Path + ':' | Out-File $ConfigFile -append
+			$acl | Out-File $ConfigFile -append
+			$acl.Access | Out-File $ConfigFile -append
+
+			$acl = Get-Acl $Share.StagingFolder -EA SilentlyContinue
+			'ACLs on ' + $Share.StagingFolder + ':' | Out-File $ConfigFile -append
+			$acl | Out-File $ConfigFile -append
+			$acl.Access | Out-File $ConfigFile -append
+
+			$MetadataFolder = $Share.StagingFolder + '\Metadata'
+			$acl = Get-Acl $MetadataFolder -EA SilentlyContinue
+			'ACLs on ' + $MetadataFolder + ':' | Out-File $ConfigFile -append
+			$acl | Out-File $ConfigFile -append
+			$acl.Access | Out-File $ConfigFile -append
+
+			if ($AdvancedMode) { Get-ChildItem $MetadataFolder | foreach{ Copy-Item $_.FullName $MetadataDirectory } }
+			
+			foreach($user in $Share.User)
+			{
+				'Full list of users on this sync share:' | Out-File $ConfigFile -append
+				$user | Out-File $ConfigFile -append
+			}
+
+			$LogSeparator | Out-File $ConfigFile -append
+			'End config for sync share ' + $Share.Name | Out-File $ConfigFile -append
+			$LogSeparator | Out-File $ConfigFile -append
+		}
+	}
+
+	if ($IsClient)
+	{
+		Get-Registry 'hklm:SOFTWARE\Microsoft\Windows\CurrentVersion\WorkFolders' $RegConfigFile
+		Get-Registry 'hkcu:SOFTWARE\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\WorkFolders' $RegConfigFile
+		Get-Registry 'hkcu:SOFTWARE\Microsoft\Windows\CurrentVersion\Internet Settings' $RegConfigFile
+		if ($AdvancedMode) { Get-ChildItem ($env:LOCALAPPDATA + '\Microsoft\Windows\WorkFolders\Metadata') | foreach{ Copy-Item $_.FullName $MetadataDirectory } }
+	}
+
+	### event log entries
+	Write-Host "$(Get-Date -Format 'HH:mm:ss') Collecting WorkFolders $WFmode event log entries ..."
+	$EventLogDirectory = $WFmodeDirectory + '\' + $WFmode + 'EventLogs'
+	New-Item $EventLogDirectory -type directory | Out-Null
+
+	if ($IsServer)
+	{
+		Get-EventsTxt Microsoft-Windows-SyncShare/Operational ($EventLogDirectory + '\' + $env:COMPUTERNAME + '_SyncShare_Operational.txt')
+		Get-EventsTxt Microsoft-Windows-SyncShare/Debug ($EventLogDirectory + '\' + $env:COMPUTERNAME + '_SyncShare_Debug.txt')
+		Get-EventsTxt Microsoft-Windows-SyncShare/Reporting ($EventLogDirectory + '\' + $env:COMPUTERNAME + '_SyncShare_Reporting.txt')
+	}
+
+	if ($IsClient)
+	{
+		Get-EventsTxt Microsoft-Windows-WorkFolders/Operational ($EventLogDirectory + '\' + $env:COMPUTERNAME + '_WorkFolders_Operational.txt')
+		Get-EventsTxt Microsoft-Windows-WorkFolders/Debug ($EventLogDirectory + '\' + $env:COMPUTERNAME + '_WorkFolders_Debug.txt')
+		Get-EventsTxt Microsoft-Windows-WorkFolders/Analytic ($EventLogDirectory + '\' + $env:COMPUTERNAME + '_WorkFolders_Analytic.txt')
+		Get-EventsTxt Microsoft-Windows-WorkFolders/WHC ($EventLogDirectory + '\' + $env:COMPUTERNAME + '_WorkFolders_ManagementAgent.txt')
+	}
+	Write-Host "$(Get-Date -Format 'HH:mm:ss') Collection of WorkFolders $WFmode event log entries done."
+
+	if ($AdvancedMode)
+	{
+		if ($IsClient) {  Write-Host "$(Get-Date -Format 'HH:mm:ss') Restarting Service WorkFolderssvc."
+						Start-Service WorkFolderssvc }
+		if ($IsServer) {  Write-Host "$(Get-Date -Format 'HH:mm:ss') Restarting Services SyncShareSvc, SyncShareTTSvc."
+						Start-Service SyncShareSvc
+						Start-Service SyncShareTTSvc }
+	}
+	### Compress data
+	Write-Host "$(Get-Date -Format 'HH:mm:ss') Finalizing/Zipping output ..."
+	# In the output directory, remove the system and hidden attributes from files
+	attrib ($TempOutputPath + '\*') -H -S /s
+	# Zip the output directory
+	Add-Type -AssemblyName System.IO.Compression
+	Add-Type -AssemblyName System.IO.Compression.FileSystem
+	$OutputZipFile = $OutputDirectory + '\' + $env:COMPUTERNAME + '_WorkFoldersDiagOutput.zip'
+	[System.IO.Compression.ZipFile]::CreateFromDirectory($TempOutputPath, $OutputZipFile)
+	Write-Host "All information have been saved in $OutputZipFile." -ForegroundColor Green 
+
+	###
+	Write-Host "Cleaning up environment ..."
+	if ($Cleanup) { Write-Host "$(Get-Date -Format 'HH:mm:ss') Cleaning output directory $TempOutputPath ..."
+					Remove-Item $TempOutputPath -Recurse -Force }
+
+	$ErrorActionPreference = $OldErrorActionPreference
+	Write-Host "$(Get-Date -Format 'HH:mm:ss') Done - WorkFoldersDiag`n" -ForegroundColor White -BackgroundColor DarkGreen
+} # end of function Get-WorkFoldersInfo
 
 
 function Get-NetConnection08R2 {
@@ -1548,7 +2312,7 @@ function Start-Capture {
         Start-Sleep 3
         exit
     }
-    Write-Log "$(get-date -format "HH:mm:ss") === Starting NetEventSession trace. ===" -tee -foreColor Gray
+    Write-Log "$(Get-Date -Format "HH:mm:ss") === Starting NetEventSession trace. ===" -tee -foreColor Gray
     Start-NetEventSession $name
     return $cap
 } #end Start-Capture
@@ -1558,7 +2322,7 @@ function Stop-Capture {
 # SYNOPSIS: Stops the ETW/packet capture
     [CmdletBinding()]param( $cap )
     [string]$name = $cap.name
-    Write-Log "$(get-date -format "HH:mm:ss") === Stopping trace. ===" -tee -foreColor Green
+    Write-Log "$(Get-Date -Format "HH:mm:ss") === Stopping trace. ===" -tee -foreColor Green
     Stop-NetEventSession -Name $name
     # remove the session
     Remove-NetEventSession -Name $name
@@ -1785,7 +2549,7 @@ function GetProcDumps {
 	}
     $procdump = Test-Path "$Script:ScriptPath\procdump.exe"
     if ($procdump) {
-		Write-Log "$(get-date -format "HH:mm:ss") === collect ProcDumps ===" -tee -foreColor Gray
+		Write-Log "$(Get-Date -Format "HH:mm:ss") === collect ProcDumps ===" -tee -foreColor Gray
         $ps = new-object System.Diagnostics.Process
         $ps.StartInfo.Filename = "$Script:ScriptPath\procdump.exe"
         $ps.StartInfo.Arguments = $arg
@@ -1803,7 +2567,7 @@ function GetProcDumps {
 function StartWPR {
 # SYNOPSIS: collect Windows Performance Recorder (WPR) data, Example: StartWPR "-Start GeneralProfile -Start CPU -Start Heap -Start VirtualAllocation"
 	[CmdletBinding()]param([string]$arg)
-	Write-Log "$(get-date -format "HH:mm:ss") === Starting wpr GeneralProfile tracing ===" -tee -foreColor Gray
+	Write-Log "$(Get-Date -Format "HH:mm:ss") === Starting wpr GeneralProfile tracing ===" -tee -foreColor Gray
     $ps = new-object System.Diagnostics.Process
     $ps.StartInfo.Filename = "wpr.exe"
     $ps.StartInfo.Arguments = "$arg"
@@ -1815,7 +2579,7 @@ function StartWPR {
 
 function StopWPR {
 # SYNOPSIS: stop Windows Performance Recorder (WPR) logging, Example: StopWPR
-	Write-Log "$(get-date -format "HH:mm:ss") === Stopping wpr tracing ===" -tee -foreColor Gray
+	Write-Log "$(Get-Date -Format "HH:mm:ss") === Stopping wpr tracing ===" -tee -foreColor Gray
     $ps = new-object System.Diagnostics.Process
     $ps.StartInfo.Filename = "wpr.exe"
     $ps.StartInfo.Arguments = " -Stop $dataPath\$env:COMPUTERNAME`_WPR.ETL"
@@ -1851,6 +2615,7 @@ function Test-RunningNetSession {
 	}
 }
 
+#endregion ::::: Worker Functions ::::::
 #endregion ::::: FUNCTIONS :::::
 
 
@@ -1906,7 +2671,7 @@ $Script:ALL_LOGS = Get-WinEvent -ListLog *
 # Sysinternals URL
 $sysUrl = 'https://live.sysinternals.com'
 
-Start-Transcript -Path "$script:dataPath\_tss_$Date_time`_Transcript.Log"
+Start-Transcript -Path "$script:dataPath\_psTss_$Date_time`_Transcript.Log"
 
 ##############################
 ### START EDITABLE CONTENT ###
@@ -2632,10 +3397,23 @@ if ($level)
 
 
 #region ::::: VALIDATION :::::
-if ($ProviderName -eq '' -or $ProviderName -eq $null) {Write-Log "`n$(get-date -format "HH:mm:ss") === Validation: missing ProviderName, please specify -Trace or any other Component option ===" -tee -foreColor Red
-	exit}
+ShowProgress -Fore Green "Script Start..."
+# Checkout if we are running with elevated privileges
+$RunningAsAdmin= DoIRunAsAdmin
+If ($RunningAsAdmin -eq $False){
+    ShowProgress -Fore Red         "The script does not run in privileged (admin) mode"
+    ShowProgress -Fore DarkMagenta "so we can´t query the cluster service, can´t create a log folder, debuglogfile and so on... "
+    ShowProgress -Fore DarkMagenta "Please run again in privileged mode as admin"
+    ShowProgress -Fore Red         "Exiting script now !"
+    EXIT # Exit the script now as it doesn´t make sense to run this script in non privileged mode
+}
 
-Write-Log "`n$(get-date -format "HH:mm:ss") === Validation: Verifying Windows is version 6.1+  OSversion: $Script:osVer ===" -tee -foreColor Gray
+if ( -not ($WorkFolders -or $Ports -or $BindWatch)) {
+	if ($ProviderName -eq '' -or $ProviderName -eq $null) {Write-Log "`n$(Get-Date -Format "HH:mm:ss") === Validation: missing ProviderName, please specify -Trace or any other Component option ===" -tee -foreColor Red
+		exit}
+	}
+
+Write-Log "`n$(Get-Date -Format "HH:mm:ss") === Validation: Verifying Windows is version 6.1+  OSversion: $Script:osVer ===" -tee -foreColor Gray
 # verify you're running at least Windows version 6.1
 if ($Script:osMajVer -lt 6 -or ($Script:osMajVer -eq 6 -and $Script:osMinVer -eq 0)) {
     Write-Log "WARNING: You must be running Windows 7, Server 2008 R2 or greater to use NETSH TRACE. Exiting in 5 seconds." -tee -foreColor Red
@@ -2733,9 +3511,20 @@ Test-RunningNetSession
 
 
 #region ::::: MAIN :::::
+# Preparations - Quick running functions
+ShowProgress -Fore Green "Running functions that should go quickly now ..."
+$ComputerNames = IfClusterGetNodeNames # Check if Cluster Service answers on the current computer; if yes get the node names we can reach over network else return local computername
+
+ShowProgress "...running data collection on ComputerNames: $ComputerNames"
+if ($IsClusSvcRunning) { # if script runs on a cluster create the LogFolder $LogPath on all Cluster Nodes
+    CreateLogFolderOnHosts -ComputerNames $ComputerNames -LogPath $LogPath 
+}	
+else { # else if the cluster service is not running create LogFolder $LogPath on local host
+    CreateFolder -HostName "$env:ComputerName" -FolderPath $LogPath
+}
 
 #region ::::: START TRACING :::::
-Write-Log "$(get-date -format "HH:mm:ss") === Initialize $ProviderName tracing ===" -tee -foreColor Gray
+Write-Log "$(Get-Date -Format "HH:mm:ss") === Initialize $ProviderName tracing ===" -tee -foreColor Gray
 if ($Perfmon)	{ Start-PerfmonLogs -tracePath $dataPath}
 if ($WPR)		{ StartWPR "-Start GeneralProfile -Start CPU -Start Heap -Start VirtualAllocation" }
 if ($Trace)		{ Trace-Nic $chooseNics}
@@ -2779,20 +3568,24 @@ if ($EVENT_LOG_LIST) {
 }
 
 # start problem steps recorder
-if ($psr)		{ Start-PSR -outputFile "$datapath\$env:COMPUTERNAME`_psr.zip" }
+if ($psr)		{Start-PSR -outputFile "$datapath\$env:COMPUTERNAME`_psr.zip" }
 
-if ($ProcMon)	{ Start-Procmon }
+if ($ProcMon)	{Start-Procmon }
 if ($SMBCli)	{Start-Tcmd -mode CliOn}
 if ($SMBSrv)	{Start-Tcmd -mode SrvOn}
 
 Write-Log "Providerlist: $Script:PROVIDER_LIST" -tee -foreColor Gray
 Write-Log "Scenarios: $Script:scenarios" -tee -foreColor Gray
-Write-Log "$(get-date -format "HH:mm:ss") === Starting $ProviderName tracing ===" -tee -foreColor Gray
+Write-Log "$(Get-Date -Format "HH:mm:ss") === Starting $ProviderName tracing ===" -tee -foreColor Gray
+
+if ($WorkFolders) {Get-WorkFoldersInfo -OutputDirectory $dataPath $AdvancedMode -TraceLevel $TraceLevel}
 # interactive stop tracing
-Write-Log "`n$(get-date -format "HH:mm:ss") === Reproduce the issue then press the 's' key to stop tracing. ===`n" -tee -foreColor Green
-do {
-    $x = $host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-} until ($x.Character -ieq 's')
+if ( -not ($WorkFolders -or $Ports -or $BindWatch)) {
+	Write-Log "`n$(Get-Date -Format "HH:mm:ss") === Reproduce the issue then press the 's' key to stop tracing. ===`n" -tee -foreColor Green
+	do {
+		$x = $host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+	} until ($x.Character -ieq 's')
+}
 #endregion ::::: START TRACING :::::
 
 #region ::::: STOP TRACING :::::
@@ -2893,40 +3686,28 @@ if ($SMBCli -or $SMBsrv) {Stop-Tcmd -mode OFF}
 Write-Log " ...Collecting Eventlogs $script:EvtHoursBack" -tee -foreColor Gray
 # get Eventlogs for last xx days
 #Get-Eventlogs -Evtlogs System,Application #30
-Get-Eventlogs -Evtlogs $EVENT_LOG_LIST
+#Get-Eventlogs -Evtlogs $EVENT_LOG_LIST
+
+# Do the work longer running parts
+ShowProgress -Fore Green "Running functions that take longer now ..."
+GetEventLogs -ComputerNames $ComputerNames -HoursBack $HoursBack -LogNames $EVENT_LOG_LIST #$EventLogNames
+
+GetNetInfoPerHost -ComputerNames $ComputerNames
+
+MoveDataFromAllComputersToLocalComputer -ComputerNames $ComputerNames
+
+#endregion ::::: STOP TRACING :::::
+
+
+# End of Script Messages
+$ScriptDuration= ( (Get-Date) - $TimeStampScriptStart ) # Calculate how long the script ran
+ShowProgress -Fore Gray "Script ran for Min:Sec - $($ScriptDuration.Minutes):$($ScriptDuration.Seconds) "
+$DebugLogCount= $DebugLogCountMax # to flush $DebugLogBuffer to the Logfile
+ShowProgress -Fore Gray "Exit Script - End of Script"
 
 Stop-Transcript
 # Data Compression
-if (!$noZip) {
-	# moved to end: wait for msinfo32 to complete
-	if ($MsInfo32) { 
-		Write-Log " ...waiting on MsInfo32 to complete" -tee
-		do
-		{
-			$isDone = Get-Process msinfo32 -EA SilentlyContinue
-			if ($isDone) {Start-Sleep -Seconds 3}
-		} until ($isDone -eq $null -or (Get-Date) -gt $start_info32.AddMinutes(3))
-	}
-
-	Write-Log "$(get-date -format "HH:mm:ss") ...Compressing data. Please be patient." -tee
-	if ($Script:osMajVer -eq 6 -and $Script:osMinVer -le 1)
-	{
-		# cab file path and name
-		$cabFile = "$dataPath\$rootName`_results.cab"
-		# write the final prompt to log before compression to complete the log file
-		Write-Log "Please upload the following file(s) to Microsoft for analysis, when compression finished:`n  $cabFile" -tee -foreColor Yellow
-		Compress-Directory -dir "$dataPath" -cabName "$(Split-Path $cabFile -Leaf)" -cabPath "$(Split-Path $dataPath -Parent)"
-		Write-Host -ForegroundColor Green "$(get-date -format "HH:mm:ss") *** Please upload the following file(s) to Microsoft for analysis:`n  $cabFile"
-	} else {
-		# write the final prompt to log before compression to complete the log file
-		Write-Log "Please upload the following file(s) to Microsoft for analysis, when compression finished:`n  $dataPath`_Results.zip" -tee -foreColor Yellow
-		Add-Type -Assembly "System.IO.Compression.FileSystem"
-		[System.IO.Compression.ZipFile]::CreateFromDirectory("$dataPath", "$dataPath`_Results.zip")
-		# prompt
-		Write-Host -ForegroundColor Green  "$(get-date -format "HH:mm:ss") *** Please upload the following file(s) to Microsoft for analysis:`n  $dataPath`_Results.zip"
-	}
-} else { Write-Log "`n$(get-date -format "HH:mm:ss") *** Please compress all files in $dataPath, upload zip file to MS workspace`n" -tee -foreColor Yellow }
-#endregion ::::: STOP TRACING :::::
+Compress-All-Data
 #endregion ::::: MAIN :::::
 
 
@@ -2949,6 +3730,7 @@ https://github.com/walter-1/psTSS
 - Overwork add - Script Duration and Function Duration after Time Stamp - Make it short
 - Document - What the columns mean SDur; FDur
 - Sync with Walt
+-- Done
 #>
 
 <# //Walt - Post Processing 
