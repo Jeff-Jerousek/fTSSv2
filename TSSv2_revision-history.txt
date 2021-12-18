@@ -1,0 +1,26 @@
+**TSSv2 Revision History** (https://aka.ms/getTSSv2) - *ReleaseNotes* -Changes/Improvements since last version
+
+::   2021.12.18.0 [rh] _FW: change variable name to $global:StartAutologger from $global:SetAutoLogger to refect the change happened in FW
+::   2021.12.17.1 [we] _FW: cosmetic changes; report Get-Culture and Get-UICulture in info log
+::   2021.12.17.0 [we] _SHA: fix SHA_SDDC based on RobertVi; _NET: fix NET_Capture
+::   2021.12.16.2 [we] _NET: workaround for #362
+::    _FW added help: -WaitEvent Evt:<EventID>:<Eventlog Name>[:<CheckIntInSec>:<StopWaitTimeInSec>:<StopEventData>:<EvtDataPartial>:<OR|AND>]
+:: 		add Function RunAdminCheck, fix #355; change "Reproduce the issue and enter 'Y' key .." to avoid stopping immediatelly when user entered Y<RETURN> for PSR/Video
+:: 		replaced some Read-Host with CHOICE
+:: 		update Sysinternals binaries
+::   2021.12.12.1 [rh] _FW: add -NetshMaxSize and more no* switches
+::   2021.12.09.1 [we] _SHA: fix SHA_SDDC; 
+::    _FW: don't run AutoUpdate, $Xray = $True => always run xray
+::   2021.12.08.0 [we] _UEX: add Collect -UEX_PrintEx 
+::     _FW: disabled Auto-UpdateTSS
+::   2021.12.07.0 [we] _NET: fix NET_WebClient -Mode Advanced; _FW: upd -Help; [sb] _DND: DND_SETUPReport
+::   2021.12.05.0 [we] _SHA: add SHA_SMS per GetSmsLogs.psm1, see https://github.com/nedpyle/storagemigrationservicehelper
+::   2021.12.02.1 [sb] _SHA: finished migrating DND_SETUPReport 
+::   2021.12.01.0 [we] _NET: add NET_Auth scenario
+::   2021.11.29.0 [we] _NET: add RAS -Mode Hang
+::   _FW:  add option -Mode Hang, add check $noUpdate for online check; add switches -noPerfMon, -noNetsh, -noXperf, -noWPR (could be necessary avoiding PerfMon issues on localized OS); adding PerfMon '\Process V2' counters for Win11
+::     moving NET_ADcore, NET_ADsam, NET_BadPwd, NET_DFSR, NET_LDAPsrv, NET_LockOut to ADS
+:: 	   moving NET_CSVspace, NET_MPIO, NET_msDSM to SHA
+::   2021.11.25.2 [we] _FW: automated public online version checking
+  
+  
