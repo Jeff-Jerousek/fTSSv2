@@ -1,5 +1,21 @@
 **TSSv2 Revision History** (https://aka.ms/getTSSv2) - *ReleaseNotes* -Changes/Improvements since last version
-
+::   2022.01.10.0 [we] _NET: add NET_Netsetup,NET_Netlogon; moved Start/Stop_Netlogon to NET_Netlogon
+::   2022.01.07.0 [we] _FW: ren Fw functions CreateLogFolder,EvtLogDetails,ExecWMIQuery,ExportRegistry,ExportRegToOneFile,IsElevated,IsSupportedOSVersion,ResolveDesktopPath to Fw*
+::   2022.01.06.0 [we] _FW: add ListSupportedNoOptions, sort CONTROLS aphabetically, fix global:FwGetCertsInfo
+::   2022.01.05.0 [we] _FW: fix typos; fix ProcmonPreStart/ProcmonPostStop; FwGetCertsInfo(); upd -Help with SDP; _NET: fix WebClient
+::   2022.01.04.2 [we] _FW: moving more helper functions of general interest from _NET to _FW: global: FwClearCaches, FwCopyWindirTracing, FwDoCrash, FwGetGPresultAS, FwGetKlist, FwGetMsInfo32, FwGetNltestDomInfo, FwGetPoolmon, FwGetProxyInfo, FwGetRegHives, FwRestartInOwnSvc, FwGetSVC, FwGetSVCactive, FwGetSysInfo, FwGetTaskList, FwGetWhoAmI
+::   2022.01.04.0 [we] _FW: for MiniBasicLogs Folder=BasicLogs_Mini; fix Issue#405: add App/Sys Evtlogs in CSV,TXT format; add WireShark ex); add FwGetHandle()
+::   2022.01.03.0 [we] _NET: re-add NET_HypHost/HypVM, _FW: revoked preliminary changes for Issue#396, fixed typos
+::   2021.12.31.1 [we] _FW: add global:FwAddRegItem/FwGetRegList and global:FwAddEvtLog/FwGetEvtLogList as FW functions; sorted no* options
+:: 	  moved NET_ components to ADS: GPedit GPmgmt GPsvc GroupPolicy Profile 
+:: 	  _NET: moved Poolmon to FW; renamed addReg -> FwAddRegItem, addEvtLog -> FwAddEvtLog
+:: 	  _NET: moved NET_ components to SHA: HypHost, HypVM, ShieldedVM; made some $EvtLogs to global:EvtLogs*; moved FwGetNetAdapter and FwGetVMNetAdapter to FW
+:: 	  _NET: moved NET_ '_WinUpd' to _DND
+::   2021.12.31.1 [we] _FW: rename FwEventLogExport rename to FwExportSingleEventLog (#327)
+::   2021.12.31.0 [we] _FW: fix typos, extend -Help, add -ListSupportedCommands, sorting items alphabetically, replace "    " with <Tab>,..
+::   2021.12.30.0 [we] _NET: add getCertsInfo to SMBcli
+::   2021.12.29.0 [we] _FW: fix '-PerfMon ALL' for Srv2022 & Win11 (Issue#383); fix Get-TimeZone (Issue#381); Issue#380 -PktMon is only supported on RS5+; fixing (partly?) PktMon output
+::   2021.12.27.0 [we] _NET: fix doTCPrundown(),CollectNET_VPNLog; _FW: mod. Procdump helpmsg
 ::   2021.12.18.0 [rh] _FW: change variable name to $global:StartAutologger from $global:SetAutoLogger to refect the change happened in FW
 ::   2021.12.17.1 [we] _FW: cosmetic changes; report Get-Culture and Get-UICulture in info log
 ::   2021.12.17.0 [we] _SHA: fix SHA_SDDC based on RobertVi; _NET: fix NET_Capture
