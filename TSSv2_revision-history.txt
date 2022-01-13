@@ -1,4 +1,5 @@
 **TSSv2 Revision History** (https://aka.ms/getTSSv2) - *ReleaseNotes* -Changes/Improvements since last version
+::   2022.01.13.1 [we] _NET: upd PrintSvc, add NET_UNChard,SBSL
 ::   2022.01.13.0 [we] _NET: add NET_RDScli,NET_RDSsrv; _FW: add FwGetEnv(), FwQwinsta()
 ::   2022.01.12.0 [we] _NET: add "Microsoft-Windows-VPN-Client" to VPN, add IPsec to VPN/WFP scenario
 ::   2022.01.10.0 [we] _NET: add NET_Netsetup,NET_Netlogon; moved Start/Stop_Netlogon to NET_Netlogon
