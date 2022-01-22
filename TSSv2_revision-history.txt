@@ -1,4 +1,16 @@
 **TSSv2 Revision History** (https://aka.ms/getTSSv2) - *ReleaseNotes* -Changes/Improvements since last version
+::   2022.01.22.5 [rh] _FW: Add command -GPresult -Handle -Poolmon(#416)
+::   2022.01.22.4 [rh] _FW: Remove -nowaitstop as it is no longer used(#402)
+::   2022.01.22.3 [rh] _FW: Change a way to detct running PktMon(#404 and #445)
+::   2022.01.22.2 [rh] _FW: Add Microsoft-Windows-Kernel-LiveDump/Analytic to event log list (#427)
+::   2022.01.22.1 [rh] _FW: Fix an issue in detecting scenario trace(#449)
+::   2022.01.22.0 [rh] _FW: Remove extension of .001 from autologger etl file name(#448) 
+::   2022.01.18.0 [we] _FW: add Function FwTestConnWebSite, upd tss_update-script.ps1
+::   2022.01.17.1 [rh] _FW: Change a way to detect LiveKD(#427)
+::   2022.01.17.0 [rh] _FW: Change command line to start new session(#440)
+::   2022.01.16.0 [we] _FW: upd minor help lines(#437)
+::   2022.01.15.0 [rh] _FW: Simplificate/combine switch -StopAutoLogger into -Stop(#391)
+::   2022.01.14.0 [we] fix psSDP TS_MCAlite.ps1
 ::   2022.01.13.1 [we] _NET: upd PrintSvc, add NET_UNChard,SBSL
 ::   2022.01.13.0 [we] _NET: add NET_RDScli,NET_RDSsrv; _FW: add FwGetEnv(), FwQwinsta()
 ::   2022.01.12.0 [we] _NET: add "Microsoft-Windows-VPN-Client" to VPN, add IPsec to VPN/WFP scenario
