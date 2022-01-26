@@ -1,4 +1,9 @@
 **TSSv2 Revision History** (https://aka.ms/getTSSv2) - *ReleaseNotes* -Changes/Improvements since last version
+::   2022.01.26.0 [rh] _FW: Add support for script path having space(#462) and revert -StopAutologger for compatibility, fix procdump issue(#303), minor fix in tss_update-script.ps1
+::   2022.01.25.0 [we] _NET: add Container
+::   2022.01.24.0 [we] _SHA: update SHA_Storage with all aka SAN Shotgun from Insightweb
+::   2022.01.23.0 [rh] _FW: Add -Crash switch(#416), update FwDoCrash and add try-catch to CheckVersion
+::   2022.01.22.5 [we] _FW: minor cleanup and help changes; mod -LiveKd Start; swapped string "Running" with [System.ServiceProcess.ServiceControllerStatus]::Running; added helper functions ProcessBasicLog, FwTest-TCPport
 ::   2022.01.22.5 [rh] _FW: Add command -GPresult -Handle -Poolmon(#416)
 ::   2022.01.22.4 [rh] _FW: Remove -nowaitstop as it is no longer used(#402)
 ::   2022.01.22.3 [rh] _FW: Change a way to detct running PktMon(#404 and #445)
