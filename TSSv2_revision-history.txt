@@ -1,4 +1,7 @@
 **TSSv2 Revision History** (https://aka.ms/getTSSv2) - *ReleaseNotes* -Changes/Improvements since last version
+::   2022.01.27.1 [rh] _FW: Add message to inform user to upload $global:LogFolder in case of bailing out with error(#465)
+::   2022.01.27.0 [we] _FW: # enable tss_config parameters for -CollectLog
+::   2022.01.26.1 [sb] _DND: DND_SETUPReport, disabled progress display from Test-NetConnection, added hours to runtime calculation
 ::   2022.01.26.0 [rh] _FW: Add support for script path having space(#462) and revert -StopAutologger for compatibility, fix procdump issue(#303), minor fix in tss_update-script.ps1
 ::   2022.01.25.0 [we] _NET: add Container
 ::   2022.01.24.0 [we] _SHA: update SHA_Storage with all aka SAN Shotgun from Insightweb
