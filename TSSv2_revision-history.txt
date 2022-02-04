@@ -1,5 +1,6 @@
 **TSSv2 Revision History** (https://aka.ms/getTSSv2) - *ReleaseNotes* -Changes/Improvements since last version
-::   2022.02.03.0 [we] _FW: ignore errors for "Get-WinEvent -Oldest ..", add FwGetSrvSKU(),FwGetSrvRole()
+::   2022.02.04.0 [we] _NET: if (!Mode -eq "Basic") {VpnClient_dbg}, fix Workfolders
+::   2022.02.03.0 [we] _FW: ignore errors for "Get-WinEvent -Oldest ..", add FwGetSrvSKU(),FwGetSrvRole(); refined Monitoring help; _NET add FwGetSrvRole to Start_common
 ::   2022.02.01.0 [we] _NET: add NET_Auth,NET_Proxy as component tracing; Providers must not have '_' or '-' in name
 ::   2022.01.31.0 [we] _FW: mod. update-script to download from cesdiagtools.blob.core.windows.net/windows/TSSv2.zip
 ::   2022.01.29.2 [we] _FW: full NotMyFaultPath + /AcceptEula, mod. display of Test_* functions i.e. Test_File 
