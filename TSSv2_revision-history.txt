@@ -1,4 +1,5 @@
 **TSSv2 Revision History** (https://aka.ms/getTSSv2) - *ReleaseNotes* -Changes/Improvements since last version
+::   2022.02.06.0 [we] _ADS: removed '_' from provider names, moved some LogInfo into LogInfoFile, added LogInfo "Stage: ...", implemented ADS_*scenarios as component as well
 ::   2022.02.04.0 [we] _NET: if (!Mode -eq "Basic") {VpnClient_dbg}, fix Workfolders, add SHA_ReFS
 ::   2022.02.03.0 [we] _FW: ignore errors for "Get-WinEvent -Oldest ..", add FwGetSrvSKU(),FwGetSrvRole(); refined Monitoring help; _NET add FwGetSrvRole to Start_common
 ::   2022.02.01.0 [we] _NET: add NET_Auth,NET_Proxy as component tracing; Providers must not have '_' or '-' in name
