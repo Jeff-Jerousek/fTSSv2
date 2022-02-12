@@ -2,13 +2,16 @@
 TSSv2: Windows PowerShell based Troubleshshooting script (TSS) toolset 
 
 This is the Windows PowerShell based equivalent for the CMD based **TSS** toolset. 
-For Downlaods please use official Microsoft sites:
+
+For **Downlaods** please use official Microsoft sites:
 - aka.ms/getTSSv2
 - https://cesdiagtools.blob.core.windows.net/windows/TSSv2.zip 
 
+Note: https://cesdiagtools.blob.core.windows.net/windows/TSSv2.ver will always reflect **latest version** number
+
 
 ## Redirect to:
-https://microsoft.ghe.com/css-windows/WindowsCSSToolsDevRep
+https://cesdiagtools.blob.core.windows.net/windows/TSSv2.zip 
 
 TSSv2 (TroubleShootingScript Version 2) is PowerShell based Tool and Framework for rapid flexible data collection and diagnostic with a goal to resolve customer support cases in the most efficient and secure way. TSSv2 offers extensible framework for developers and engineers to incorporate their specific tracing scenarios.
 TSSv2.zip is available from public download site at http://aka.ms/getTSSv2
@@ -34,3 +37,9 @@ For Windows **DND** POD please refer to https://internal.support.services.micros
 For Windows **SHA** POD please refer to https://internal.support.services.microsoft.com/en-us/help/5009525
 
 For Windows **PRF** POD please refer to https://internal.support.services.microsoft.com/en-us/help/5009898
+
+Quick help:
+
+KB5011690 WinX: FastStart / Quick Reference: TSSv2 commands for TSS (v1) users 
+
+KB5011695 WinX: TSSv2: CX ready email template for TSSv2 Action Plans
