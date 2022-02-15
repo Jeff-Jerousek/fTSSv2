@@ -1,4 +1,7 @@
 **TSSv2 Revision History** (https://aka.ms/getTSSv2) - *ReleaseNotes* -Changes/Improvements since last version
+::   2022.02.15.0 [we] _FW: in case of collecting -SDP only, create subfolder SDP
+::   2022.02.14.0 [we] _FW: Help: add prefix [context] to help output 
+::   2022.02.13.0 [we] _FW: updated -Help texts
 ::   2022.02.12.0 [we] _FW: implemented -Find <keyword>
 ::   2022.02.11.0 [we] _FW: ask in -ListSupportedPerfCounter detailed Y/N; ProcDumpOption+Interval per config.cfg; _NET: upd NET_NCSI; upd xray
 ::   2022.02.06.0 [we] _ADS: removed '_' from provider names, moved some LogInfo into LogInfoFile, added LogInfo "Stage: ...", implemented ADS_*scenarios as component as well
