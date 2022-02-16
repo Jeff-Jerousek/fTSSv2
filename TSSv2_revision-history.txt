@@ -1,5 +1,6 @@
 **TSSv2 Revision History** (https://aka.ms/getTSSv2) - *ReleaseNotes* -Changes/Improvements since last version
-::   2022.02.15.0 [we] _FW: in case of collecting -SDP only, create subfolder SDP
+::   2022.02.16.0 [rh] _FW: Allow Remoting from commandline with ArgumentList for -RemotingHosts host1,host2(#466)
+::   2022.02.15.0 [we] _FW: in case of collecting -SDP only, create subfolder SDP; report TSS module versions, and main version, if TssReleaseServer is not reachable
 ::   2022.02.14.0 [we] _FW: Help: add prefix [context] to help output 
 ::   2022.02.13.0 [we] _FW: updated -Help texts
 ::   2022.02.12.0 [we] _FW: implemented -Find <keyword>
