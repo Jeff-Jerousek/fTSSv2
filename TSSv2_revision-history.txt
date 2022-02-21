@@ -1,4 +1,6 @@
 **TSSv2 Revision History** (https://aka.ms/getTSSv2) - *ReleaseNotes* -Changes/Improvements since last version
+::   2022.02.21.0 [rh] _FW: Add a message on how to download/install .NET 3.5 if it is missing(#486)
+::   2022.02.20.0 [rh] _FW: Add a logic to support light version of TSSv2(#500)
 ::   2022.02.17.0 [we] _FW: add $TimeUTC + $Timezone: _NET fix Proxy/Ncsi: remove "Microsoft-Windows-WLAN-AutoConfig/Operational" on ServerSKU
 ::   2022.02.16.0 [rh] _FW: Allow Remoting from commandline with ArgumentList for -RemotingHosts host1,host2(#466)
 ::   2022.02.15.0 [we] _FW: in case of collecting -SDP only, create subfolder SDP; report TSS module versions, and main version, if TssReleaseServer is not reachable
