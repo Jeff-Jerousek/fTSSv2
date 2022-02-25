@@ -1,4 +1,7 @@
 **TSSv2 Revision History** (https://aka.ms/getTSSv2) - *ReleaseNotes* -Changes/Improvements since last version
+::   2022.02.24.1 [we] _FW: upd Help
+::   2022.02.24.0 [we] _FW: fix SDP foldername if $SDP is string array with 2+ emlements; fix for missing PSR.exe
+::   2022.02.21.1 [we] _FW: in case of collecting -SDP only, shorten subfolder to SDP_<specialty>
 ::   2022.02.21.0 [rh] _FW: Add a message on how to download/install .NET 3.5 if it is missing(#486)
 ::   2022.02.20.0 [rh] _FW: Add a logic to support light version of TSSv2(#500)
 ::   2022.02.17.0 [we] _FW: add $TimeUTC + $Timezone: _NET fix Proxy/Ncsi: remove "Microsoft-Windows-WLAN-AutoConfig/Operational" on ServerSKU
