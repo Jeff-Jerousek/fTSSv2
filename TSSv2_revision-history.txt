@@ -1,4 +1,5 @@
 **TSSv2 Revision History** (https://aka.ms/getTSSv2) - *ReleaseNotes* -Changes/Improvements since last version
+::   2022.03.02.1 [we] _FW: add a -EvtDaysBack <N> (Convert Eventlogs only for last N days #510)
 ::   2022.03.02.0 [we] _FW: add a -noEventConvert (suppress converting Eventlogs to .TXT format #510)
 ::   2022.03.01.0 [we] _NET: fix PktMon for _Firewall on downlevel OS
 ::   2022.02.24.1 [we] _FW: upd Help
