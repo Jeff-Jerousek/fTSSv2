@@ -1,4 +1,6 @@
 **TSSv2 Revision History** (https://aka.ms/getTSSv2) - *ReleaseNotes* -Changes/Improvements since last version
+::   2022.03.14.0 [rh] _FW: fix an issue where setting ring buffer fails on a fresh installed system(#524)
+::   2022.03.13.0 [rh] _FW: fix stop failure of WPR on 2012R2(#515)
 ::   2022.03.08.1 [we] _FW: fix support for WPR.exe ( -ge 9600); add 'WPR.exe -Stop' retry for downlevel OS
 ::   2022.03.07.0 [we] _NET: fix Net_CSC
 ::   2022.03.02.1 [we] _FW: add a -EvtDaysBack <N> (Convert Eventlogs only for last N days #510)
