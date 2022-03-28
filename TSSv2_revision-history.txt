@@ -1,4 +1,7 @@
 **TSSv2 Revision History** (https://aka.ms/getTSSv2) - *ReleaseNotes* -Changes/Improvements since last version
+::   2022.03.27.0 [rh] _FW: Add a support for purge log and fix an issue where ETLNumberToKeep and ETLMaxSize in EtlOptions not working(#522, #534)
+::   2022.03.26.0 [rh] _FW: fix an issue where -TTD fails on a system that never ran TTD(#532)
+::   2022.03.24.0 [we] _FW: mod FwTestConnWebSite(); added -noVersionChk
 ::   2022.03.23.0 [we] _FW:  Make sure all *.ps1/.psm1 files are Unblocked; log ExecutionPolicy into $global:ErrorLogFile 
 ::   2022.03.18.0 [we] _FW: add TTDPreStart; _NET: add QoS Reg.
 ::   2022.03.16.0 [we] _FW: remove \BIN\PSexec.exe; allow -Update if script is outdated more than 30 days
