@@ -1,4 +1,11 @@
 **TSSv2 Revision History** (https://aka.ms/getTSSv2) - *ReleaseNotes* -Changes/Improvements since last version
+::   2022.03.31.0 [we] _FW: add $EvtDaysSwitch for psSDP (#550); _NET: IPsec (#552) Enabling IPsec related Events in Security 
+::   2022.03.30.0 [we] _FW: adjust $TotalExpectedTraceCount to avoid error 1450 = ERROR_NO_SYSTEM_RESOURCES; add $env:Path info
+::   2022.03.29.3 [rh] _FW: Add a message that warns the possibility of WPR to consume free disk space(#531)
+::   2022.03.29.2 [rh] _FW: Fix an issue where -noRecording does not work(#543)
+::   2022.03.29.1 [rh] _FW: Fix an issue where framework detects Xperf incorrectly on the system that 'NT Kernel Logger' is enabled(#539)
+::   2022.03.29.0 [rh] _FW: Fix TTD start failure on WS2012R2(#532)
+::   2022.03.28.0 [we] _FW: dont run Un/RegisterPurgeTask on 2008-R2/2012
 ::   2022.03.27.0 [rh] _FW: Add a support for purge log and fix an issue where ETLNumberToKeep and ETLMaxSize in EtlOptions not working(#522, #534)
 ::   2022.03.26.0 [rh] _FW: fix an issue where -TTD fails on a system that never ran TTD(#532)
 ::   2022.03.24.0 [we] _FW: mod FwTestConnWebSite(); added -noVersionChk
