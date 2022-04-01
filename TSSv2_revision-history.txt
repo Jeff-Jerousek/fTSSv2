@@ -1,4 +1,5 @@
 **TSSv2 Revision History** (https://aka.ms/getTSSv2) - *ReleaseNotes* -Changes/Improvements since last version
+::   2022.04.01.0 [we] _FW: add functions FwAuditPolSet FwAuditPolUnSet; _NET: mod Net_Firewall with AuditPol settings
 ::   2022.03.31.0 [we] _FW: add $EvtDaysSwitch for psSDP (#550); _NET: IPsec (#552) Enabling IPsec related Events in Security 
 ::   2022.03.30.0 [we] _FW: adjust $TotalExpectedTraceCount to avoid error 1450 = ERROR_NO_SYSTEM_RESOURCES; add $env:Path info
 ::   2022.03.29.3 [rh] _FW: Add a message that warns the possibility of WPR to consume free disk space(#531)
