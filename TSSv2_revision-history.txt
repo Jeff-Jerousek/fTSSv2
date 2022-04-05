@@ -1,4 +1,5 @@
 **TSSv2 Revision History** (https://aka.ms/getTSSv2) - *ReleaseNotes* -Changes/Improvements since last version
+::   2022.04.05.0 [we] _FW: upd built-in help with examples for -NetshOptions (for commands -NetSh and -NetshScenario
 ::   2022.04.04.2 [we] _FW: mod FwGetSrvRole() to add Get-WindowsOptionalFeature; added code for CTRL-C and TSSclock stop gracefully at -WaitEvent
 ::   2022.04.04.1 [rh] _FW: Fix an issue where error popup from TSS Clock shows up repeatedly on Ctrl+C(#556)
 ::   2022.04.04.0 [we] _FW: add function FwTestRegistryValue (for #559)
