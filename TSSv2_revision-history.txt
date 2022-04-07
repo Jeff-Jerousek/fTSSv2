@@ -1,4 +1,7 @@
 **TSSv2 Revision History** (https://aka.ms/getTSSv2) - *ReleaseNotes* -Changes/Improvements since last version
+::   2022.04.07.1 [we] _FW: replaced $ParameterArray with $global:ParameterArray ; fix -noNetsh for NetshScenario (#567)
+::   2022.04.07.0 [we] _FW: a few minor updates for Fiddler and _NET: NET_Outlook
+::   2022.04.06.0 [we] _FW: renamed function Read-Host-YN to FwRead-Host-YN; add -Fiddler, _NET: add NET_Outlook
 ::   2022.04.05.0 [we] _FW: upd built-in help: -NetshOptions with single quotes ' .. '
 ::   2022.04.05.0 [we] _FW: upd built-in help with examples for -NetshOptions (for commands -NetSh and -NetshScenario; replaced LightMode with LiteMode
 ::   2022.04.04.2 [we] _FW: mod FwGetSrvRole() to add Get-WindowsOptionalFeature; added code for CTRL-C and TSSclock stop gracefully at -WaitEvent
