@@ -1,4 +1,5 @@
 **TSSv2 Revision History** (https://aka.ms/getTSSv2) - *ReleaseNotes* -Changes/Improvements since last version
+::   2022.04.08.0 [we] _FW: additions for -help on NetshMaxSize and ETLOptions
 ::   2022.04.07.1 [we] _FW: replaced $ParameterArray with $global:ParameterArray ; fix -noNetsh for NetshScenario (#567); better -help text for [Monitoring] [RegData] / [RegValue] / [RegKey]
 ::   2022.04.07.0 [we] _FW: a few minor updates for Fiddler and _NET: NET_Outlook
 ::   2022.04.06.0 [we] _FW: renamed function Read-Host-YN to FwRead-Host-YN; add -Fiddler, _NET: add NET_Outlook
