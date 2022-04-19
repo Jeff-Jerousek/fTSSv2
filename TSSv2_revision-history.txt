@@ -1,7 +1,8 @@
 **TSSv2 Revision History** (https://aka.ms/getTSSv2) - *ReleaseNotes* -Changes/Improvements since last version
-
-::  2022.04.14.0 [we] _FW: enable Remoting (listen on Evt:999) if -WaitEvent is specified
-::  2022.04.10.0 [rh] _FW: add a logic to search fiddler and add the found path the $PATH(#563)
+::   2022.04.17.0 [rh] _FW: collect memory dump at -Stop, if previous run resulted in crash(#518)
+::   2022.04.16.0 [rh] _FW: Store MS_Data folder in Reg and reuse later to save Start and Stop data into same folde(#505)
+::   2022.04.14.0 [we] _FW: enable Remoting (listen on Evt:999) if -WaitEvent is specified
+::   2022.04.10.0 [rh] _FW: add a logic to search fiddler and add the found path the $PATH(#563)
 ::   2022.04.08.0 [we] _FW: additions for -help on NetshMaxSize and ETLOptions
 ::   2022.04.07.1 [we] _FW: replaced $ParameterArray with $global:ParameterArray ; fix -noNetsh for NetshScenario (#567); better -help text for [Monitoring] [RegData] / [RegValue] / [RegKey]
 ::   2022.04.07.0 [we] _FW: a few minor updates for Fiddler and _NET: NET_Outlook
