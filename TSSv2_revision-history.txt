@@ -1,4 +1,6 @@
 **TSSv2 Revision History** (https://aka.ms/getTSSv2) - *ReleaseNotes* -Changes/Improvements since last version
+::   2022.04.21.0 [we] _FW: add Monitoring for -waitEvent LogFile:'<Path\LogfileName.ext>':'<search-string>' #477
+::   2022.04.20.0 [we] _FW: add Monitoring for active HNSL2Tunnel
 ::   2022.04.19.0 [we] _UEX: add UEX_PrintEx, UEX_DSC, UEX_Evt, UEX_Tsched dummy providers
 ::   2022.04.17.0 [rh] _FW: collect memory dump at -Stop, if previous run resulted in crash(#518)
 ::   2022.04.16.0 [rh] _FW: Store MS_Data folder in Reg and reuse later to save Start and Stop data into same folde(#505)
