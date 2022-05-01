@@ -1,4 +1,6 @@
 **TSSv2 Revision History** (https://aka.ms/getTSSv2) - *ReleaseNotes* -Changes/Improvements since last version
+::   2022.05.01.1 [rh] _FW: Monitoring (+Remoting) should avoid logging unnecessary TerminatingError(Get-WinEvent) output lines(#599)
+::   2022.05.01.0 [rh] _FW: make hardcoded '$MaxEvents = 1' configurable in Function Test_EventLog(#600)
 ::   2022.04.30.2 [rh] _FW: starting TSS in PowerShell x86-based console on a x64 machine may lead into unexpected errors(#591)
 ::   2022.04.30.1 [rh] _FW: TSSv2 -Stop should run FwRunAdminCheck(#593)
 ::   2022.04.30.0 [rh] _FW: accept double quotes to enclose <item name> that includes a space character(#595)
