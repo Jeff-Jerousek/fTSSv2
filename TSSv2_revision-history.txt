@@ -1,5 +1,6 @@
 **TSSv2 Revision History** (https://aka.ms/getTSSv2) - *ReleaseNotes* -Changes/Improvements since last version
 
+::   2022.05.09.0 [we] _NET: upd WIP fixes, upd EFS
 ::   2022.05.05.0 [we] _FW: fix '-Proc'DumpOption Stop' is ignored(#604); _NET add -Mode NFSperm; NPS srv check
 ::   2022.05.02.0 [we] _FW: adding CustomETL (#410); minor -Help updates and DebugLog formattings
 ::   2022.05.01.1 [rh] _FW: Monitoring (+Remoting) should avoid logging unnecessary TerminatingError(Get-WinEvent) output lines(#599)
