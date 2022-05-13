@@ -1,5 +1,6 @@
 **TSSv2 Revision History** (https://aka.ms/getTSSv2) - *ReleaseNotes* -Changes/Improvements since last version
 
+::   2022.05.13.0 [we] _FW: upd -Help; fix DummyNetshFileFull; _NET: check for DFS-N server
 ::   2022.05.12.0 [we] _FW: add function FwDisplayPopUp; _NET: mod NFScli; upd getDFSsrvInfo()
 ::   2022.05.11.0 [we] _FW: collect testfile at Test_File and Test_LogFile; _NET: timeout for DFSnRoot; upd NFScli for NfsMappedIdentity
 ::   2022.05.09.0 [we] _NET: upd WIP fixes, upd EFS
