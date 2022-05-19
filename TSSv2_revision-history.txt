@@ -1,5 +1,7 @@
 **TSSv2 Revision History** (https://aka.ms/getTSSv2) - *ReleaseNotes* -Changes/Improvements since last version
 
+::   2022.05.19.0 [rh] _FW: fix an issue where TSSv2 incorrectly tries to stop SysMon customer started previously(#613)
+::   2022.05.18.0 [we] _FW: mod many functions to return result in DebugMode: EndFunc ($MyInvocation.MyCommand.Name + "($fResult)"); _ADS + _NET minor updates
 ::   2022.05.16.0 [we] _FW: dont open Explorer if $global:IsServerCore; fixes for FwCollect_BasicLog; add FwListProcsAndSvcs; _UEX: replace code with FW functions
 ::   2022.05.15.0 [we] _FW: add switch -Remote (for remote PSsession); mod FwGetMsInfo32() to allow .nfo and .txt; add FwWaitForProcess()
 ::   2022.05.13.0 [we] _FW: upd -Help; fix DummyNetshFileFull; _NET: check for DFS-N server
