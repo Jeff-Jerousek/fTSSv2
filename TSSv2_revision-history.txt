@@ -1,5 +1,6 @@
 **TSSv2 Revision History** (https://aka.ms/getTSSv2) - *ReleaseNotes* -Changes/Improvements since last version
 
+::   2022.05.23.0 [we] _ADS: mod tss_ADPerfDataCollection (ProcDump Lsass)
 ::   2022.05.22.0 [we] _ADS: add external script tss_ADPerfDataCollection (ADperf)
 ::   2022.05.20.0 [we] _FW: \BIN upd Sysinternals tools
 ::   2022.05.19.3 [we] _NET: avoid NFScli for SMB/SMBcli/DFScli; fix DFScli,NFScli,RDMA,DFSsrv; add *SMBshare_Info*.txt; _FW: bail out on Micrososft network if IsTraceOrDataCollection()
