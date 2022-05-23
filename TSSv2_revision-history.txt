@@ -1,5 +1,8 @@
 **TSSv2 Revision History** (https://aka.ms/getTSSv2) - *ReleaseNotes* -Changes/Improvements since last version
 
+::   2022.05.22.0 [we] _ADS: add external script tss_ADPerfDataCollection (ADperf)
+::   2022.05.20.0 [we] _FW: \BIN upd Sysinternals tools
+::   2022.05.19.3 [we] _NET: avoid NFScli for SMB/SMBcli/DFScli; fix DFScli,NFScli,RDMA,DFSsrv; add *SMBshare_Info*.txt; _FW: bail out on Micrososft network if IsTraceOrDataCollection()
 ::   2022.05.19.0 [rh] _FW: fix an issue where TSSv2 incorrectly tries to stop SysMon customer started previously(#613)
 ::   2022.05.18.0 [we] _FW: mod many functions to return result in DebugMode: EndFunc ($MyInvocation.MyCommand.Name + "($fResult)"); _ADS + _NET minor updates
 ::   2022.05.16.0 [we] _FW: dont open Explorer if $global:IsServerCore; fixes for FwCollect_BasicLog; add FwListProcsAndSvcs; _UEX: replace code with FW functions
