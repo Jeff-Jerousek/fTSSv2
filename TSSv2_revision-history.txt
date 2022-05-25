@@ -1,5 +1,6 @@
 **TSSv2 Revision History** (https://aka.ms/getTSSv2) - *ReleaseNotes* -Changes/Improvements since last version
 
+::   2022.05.25.0 [mk] _NET: remove SMBcli and SMBsrv from NET_hyphost ; add afdtcpfull to NET_hyphost
 ::   2022.05.24.0 [we] _NET: add Win32_DeviceGuard to VPN/808.1x scenario
 ::   2022.05.23.0 [we] _ADS: mod tss_ADPerfDataCollection (ProcDump Lsass)
 ::   2022.05.22.0 [we] _ADS: add external script tss_ADPerfDataCollection (ADperf)
