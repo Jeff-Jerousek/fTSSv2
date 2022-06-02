@@ -1,5 +1,8 @@
 **TSSv2 Revision History** (https://aka.ms/getTSSv2) - *ReleaseNotes* -Changes/Improvements since last version
 
+::   2022.05.31.0 [we] _FW: mod helper functions to support $Subfolder; add FwExportFileVerToCsv; renamed FileVersion to FwFileVersion; _DND many improvements; _NET: fix WLAN, adjust for IsLiteMode; _UEX/Mgmt replaced FileVersion with FwFileVersion
+::   2022.05.29.0 [rh] _FW: remove UEX_Basic from the list of trace($TraceSwitches) as it was replaced with -Basiclog
+::   2022.05.26.0 [rh] _FW: fix an issue where TSSv2 fails to start on AVD due to domain check
 ::   2022.05.25.1 [we] _FW: fix running TSS in MS domain
 ::   2022.05.25.0 [mk] _NET: remove SMBcli and SMBsrv from NET_hyphost ; add afdtcpfull to NET_hyphost
 ::   2022.05.24.0 [we] _NET: add Win32_DeviceGuard to VPN/808.1x scenario
