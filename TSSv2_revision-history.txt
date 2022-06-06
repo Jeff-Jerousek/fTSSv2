@@ -1,5 +1,8 @@
 **TSSv2 Revision History** (https://aka.ms/getTSSv2) - *ReleaseNotes* -Changes/Improvements since last version
 
+::   2022.06.06.0 [we] _DND: [DND_WUlogs] fix msinfo/systeminfo, replaced some code with FW functions; _NET: fix for #638 WebCliTTD
+::   2022.06.03.0 [we] _FW: don't run Component/Scenario*PostStop or Collect*Log functions + *Stop_Common_Tasks + xray + psSDP if switch -Discard is present (issue #216); add FwGet-SummaryVbsLog() (issue #382)
+::   2022.06.02.0 [we] _NET: fix WebClient, add WebCliTTD, use GUIDs for FwAuditPolSet() calls
 ::   2022.05.31.0 [we] _FW: mod helper functions to support $Subfolder; add FwExportFileVerToCsv; renamed FileVersion to FwFileVersion; _DND many improvements; _NET: fix WLAN, adjust for IsLiteMode; _UEX/Mgmt replaced FileVersion with FwFileVersion
 ::   2022.05.29.0 [rh] _FW: remove UEX_Basic from the list of trace($TraceSwitches) as it was replaced with -Basiclog
 ::   2022.05.26.0 [rh] _FW: fix an issue where TSSv2 fails to start on AVD due to domain check
